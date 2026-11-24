@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGame } from "../game";
-import { LETTERS } from "../content/letters";
+import { LETTERS, describeLetter } from "../content/letters";
 import { MISSIONS, lettersThrough, wordByRu, wordsThrough, type Mission as M } from "../content/missions";
 import { completeMission, recordAnswer } from "../lib/progress";
 import { normalize, ruName } from "../lib/text";
@@ -88,7 +88,7 @@ function Lesson({ mission, onExit, onDone }: Step) {
         <div className="label">Letra nueva</div>
         <div className="lettercard">
           <button className="big" onClick={() => speak(L.ch)} aria-label={`Escuchar la letra ${L.ch}`} lang="ru">{L.ch}<small>{L.low}</small></button>
-          <div className="sound">suena «{L.sound}»</div>
+          <div className="sound">{L.silent ? `${L.sound} · no suena sola` : `suena «${L.sound}»`}</div>
           <p className="tip">{L.tip}</p>
           <div className="example">
             <span className="w" lang="ru">{ex.ru}</span>
@@ -108,7 +108,7 @@ function Lesson({ mission, onExit, onDone }: Step) {
     <section className="screen">
       <TopBar onClose={onExit} step={i} total={steps.length} />
       <div className="label">Prueba rápida</div>
-      <h2>¿Cuál de estas letras suena «{L.sound}»?</h2>
+      <h2>{L.silent ? `¿Cuál de estas letras es el ${L.sound}?` : `¿Cuál de estas letras suena «${L.sound}»?`}</h2>
       <div className="letter-opts">
         {s.opts.map((o) => (
           <button key={o} lang="ru" disabled={done}
@@ -117,7 +117,7 @@ function Lesson({ mission, onExit, onDone }: Step) {
         ))}
       </div>
       <div className={`feedback ${done ? (right ? "ok" : "bad") : ""}`} role="status">
-        {done ? (right ? "¡Exacto!" : `Es la ${s.ch}. La ${picked} suena «${LETTERS[picked!].sound}».`) : ""}
+        {done ? (right ? "¡Exacto!" : `Es la ${s.ch}. ${describeLetter(LETTERS[picked!])}.`) : ""}
       </div>
       <div className="spacer" />
       <button className="btn" disabled={!done} onClick={next}>Continuar</button>
@@ -309,7 +309,10 @@ function Boss({ mission, onExit, onWin }: { mission: M; onExit: () => void; onWi
 function Reward({ mission }: { mission: M }) {
   const { go, p } = useGame();
   const ru = ruName(p.name);
-  const known = [...new Set([...ru.toUpperCase()].filter((c) => lettersThrough(mission.id).includes(c)))];
+  const learned = lettersThrough(mission.id);
+  const nameLetters = [...new Set([...ru.toUpperCase()].filter((c) => /[А-ЯЁ]/.test(c)))];
+  const known = nameLetters.filter((c) => learned.includes(c));
+  const wholeName = nameLetters.length > 0 && known.length === nameLetters.length;
   const nextMission = MISSIONS[MISSIONS.findIndex((m) => m.id === mission.id) + 1];
   return (
     <section className="screen">
@@ -319,10 +322,13 @@ function Reward({ mission }: { mission: M }) {
         <p className="sub"><Rich text={mission.outro} /></p>
         <div className="xp">+{mission.xp} XP</div>
         <div className="cards six">{mission.letters.map((l, i) => <div key={l} className="card got pulse" style={{ animationDelay: `${i * 0.08}s` }} lang="ru">{l}</div>)}</div>
-        {known.length ? <p className="sub">Tu nombre en ruso, <b className="fg" lang="ru">{ru}</b>, ya tiene letras que sabes leer: {known.join(" ")}.</p> : null}
+        {wholeName
+          ? <p className="sub">¡Ya sabes leer y escribir tu nombre completo en ruso: <b className="fg" lang="ru">{ru}</b>!</p>
+          : known.length ? <p className="sub">Tu nombre en ruso, <b className="fg" lang="ru">{ru}</b>, ya tiene letras que sabes leer: {known.join(" ")}.</p> : null}
         <div className="secret"><div className="label">Archivo secreto {MISSIONS.indexOf(mission) + 1} de 12</div>{mission.secret}</div>
         <p className="sub">Desde mañana estas letras y palabras aparecerán en la <b className="fg">Patrulla nocturna</b> para que no se te olviden.</p>
       </div>
+      {!nextMission ? <p className="sub">El Expediente 1 está en camino. Mientras tanto, la Patrulla nocturna te mantiene en forma.</p> : null}
       {nextMission ? <button className="btn" onClick={() => go({ name: "mission", id: nextMission.id })}>Siguiente misión: {nextMission.title}</button> : null}
       <button className={nextMission ? "btn ghost" : "btn"} onClick={() => go({ name: "map" })}>Volver al mapa</button>
     </section>

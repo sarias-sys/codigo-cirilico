@@ -23,7 +23,8 @@ export default defineConfig({
         orientation: "portrait",
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        // Los audios también se guardan para que la voz funcione sin internet.
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,mp3}"],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com",

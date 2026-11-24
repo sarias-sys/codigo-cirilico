@@ -3,7 +3,8 @@ import { addDays, dayOf } from "../lib/dates";
 import { INTERVALS, isDue, mastery, newItem, review } from "../lib/srs";
 import { normalize, ruName } from "../lib/text";
 import { options, shuffle } from "../lib/random";
-import { completeMission, fresh, load, rank, reviewItem, save, touchStreak, visibleStreak, STORAGE_KEY } from "../lib/progress";
+import { exportCode, importCode, BackupError } from "../lib/backup";
+import { completeMission, fresh, fromData, load, rank, reviewItem, save, touchStreak, visibleStreak, STORAGE_KEY } from "../lib/progress";
 import { MISSIONS } from "../content/missions";
 
 const seq = (...xs: number[]) => { let i = 0; return () => xs[i++ % xs.length]; };
@@ -122,5 +123,25 @@ describe("progreso", () => {
     expect(rank(0).name).toBe("Recluta");
     expect(rank(100).name).toBe("Cadete");
     expect(rank(99999).name).toBe("Capitán");
+  });
+});
+
+describe("copia de seguridad", () => {
+  it("un progreso sale como código y vuelve igual, con tildes y cirílico", () => {
+    const p = { ...completeMission({ ...fresh(), name: "Andrés" }, MISSIONS[0], "2026-11-23"), backupAt: "2026-11-23" };
+    const code = exportCode(p);
+    expect(code.startsWith("CC1-")).toBe(true);
+    expect(importCode(`  ${code.slice(0, 20)}\n${code.slice(20)} `)).toEqual(p);
+  });
+  it("rechaza con un mensaje claro lo que no es una copia válida", () => {
+    expect(() => importCode("")).toThrow(BackupError);
+    expect(() => importCode("hola")).toThrow(/no es una copia/);
+    expect(() => importCode(exportCode(fresh()).slice(0, 15))).toThrow(/incompleto o dañado/);
+    expect(() => importCode("CC1-" + btoa(JSON.stringify({ version: 1, name: 3 })))).toThrow(/no tiene un progreso válido/);
+  });
+  it("los datos viejos sin fecha de copia siguen cargando", () => {
+    const old: Record<string, unknown> = { ...fresh(), name: "Ana" };
+    delete old.backupAt;
+    expect(fromData(old)).toMatchObject({ name: "Ana", backupAt: null });
   });
 });

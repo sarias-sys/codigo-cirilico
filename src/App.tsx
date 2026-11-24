@@ -32,7 +32,7 @@ export default function App() {
     update: (fn) => setP((prev) => fn(prev)),
     go: (s) => { setScreen(s); window.scrollTo?.(0, 0); },
     toast,
-    speak: (ru) => { if (!say(ru)) toast("Este teléfono no tiene voz en ruso. Lee la pronunciación escrita mientras tanto."); },
+    speak: (ru) => say(ru, () => toast("No se pudo reproducir la voz en ruso. Lee la pronunciación escrita mientras tanto.")),
     play: (kind) => { if (pRef.current.sound) sfx[kind](); },
   }), [p, today, toast]);
 

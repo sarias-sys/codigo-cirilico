@@ -8,7 +8,12 @@ export type Letter = {
   example: string;
   /** Teclas latinas que la escriben en un teclado de computador. */
   latin: string[];
+  /** Signos que no suenan solos (Ь, Ъ): «sound» es su nombre. */
+  silent?: boolean;
 };
+
+/** Cómo se explica el sonido de una letra en una frase. */
+export const describeLetter = (L: Letter) => (L.silent ? `${L.ch} es el ${L.sound}: no suena sola` : `${L.ch} suena «${L.sound}»`);
 
 export const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split("");
 
@@ -25,4 +30,25 @@ export const LETTERS: Record<string, Letter> = {
   С: { ch: "С", low: "с", sound: "s", tip: "Falsa amiga: parece C, pero siempre suena «s», como en sol.", example: "СОК", latin: ["s", "c"] },
   У: { ch: "У", low: "у", sound: "u", tip: "Falsa amiga: parece Y, pero suena «u», como en uva.", example: "МУХА", latin: ["u", "y"] },
   Х: { ch: "Х", low: "х", sound: "j", tip: "Falsa amiga: parece X, pero suena «j», como en jota.", example: "ХОР", latin: ["j", "h", "x"] },
+  Б: { ch: "Б", low: "б", sound: "b", tip: "Nueva: parece un 6. Suena «b» como en barco.", example: "БРАТ", latin: ["b"] },
+  Г: { ch: "Г", low: "г", sound: "g", tip: "Parece una horca. Suena siempre «g» suave, como en gato (nunca como en gente).", example: "ГОРА", latin: ["g"] },
+  Д: { ch: "Д", low: "д", sound: "d", tip: "Parece una casita con patas. Suena «d» como en dedo.", example: "ДОМ", latin: ["d"] },
+  З: { ch: "З", low: "з", sound: "z", tip: "Parece un 3. Suena «z» zumbando como una abeja: zzz. No es la z de España.", example: "ЗВЕЗДА", latin: ["z"] },
+  И: { ch: "И", low: "и", sound: "i", tip: "Parece una N al revés. Suena «i» como en isla.", example: "ИГРА", latin: ["i"] },
+  Й: { ch: "Й", low: "й", sound: "i corta", tip: "Es la И con gorrito. Suena «i» cortita, como la y de rey.", example: "ГЕРОЙ", latin: [] },
+  Л: { ch: "Л", low: "л", sound: "l", tip: "Parece una tienda de campaña. Suena «l» como en lobo.", example: "ЛУНА", latin: ["l"] },
+  П: { ch: "П", low: "п", sound: "p", tip: "Parece una puerta. Suena «p» como en papá.", example: "ПАПА", latin: ["p"] },
+  Ф: { ch: "Ф", low: "ф", sound: "f", tip: "Un círculo atravesado por una línea. Suena «f» como en foco.", example: "ФОТО", latin: ["f"] },
+  Ж: { ch: "Ж", low: "ж", sound: "zh", tip: "Parece un escarabajo. Suena como «sh» pero vibrando la garganta, como la ll de los argentinos en «yo» (sho).", example: "ЖУК", latin: [] },
+  Ц: { ch: "Ц", low: "ц", sound: "ts", tip: "Una U cuadrada con colita. Suena «ts», como en tsunami.", example: "ЦИРК", latin: [] },
+  Ч: { ch: "Ч", low: "ч", sound: "ch", tip: "Parece un 4. Suena «ch» como en chocolate.", example: "ЧАЙ", latin: [] },
+  Ш: { ch: "Ш", low: "ш", sound: "sh", tip: "Parece un tridente. Suena «sh», como cuando pides silencio: shhh.", example: "ШКОЛА", latin: [] },
+  Щ: { ch: "Щ", low: "щ", sound: "shch", tip: "Es la Ш con colita. Suena «sh» larga y suave, como si sonrieras: shsh.", example: "ЩИТ", latin: [] },
+  Ы: { ch: "Ы", low: "ы", sound: "y", tip: "Una «i» grave: dila con la lengua hacia atrás, como si te dieran un golpe suave en la barriga. En la pronunciación la escribimos «y».", example: "СЫР", latin: [] },
+  Ь: { ch: "Ь", low: "ь", sound: "signo suave", silent: true, tip: "No suena sola: ablanda la letra de antes, como una «i» chiquitita. En la pronunciación la marcamos con un apóstrofo: dien'.", example: "ДЕНЬ", latin: [] },
+  Ъ: { ch: "Ъ", low: "ъ", sound: "signo duro", silent: true, tip: "No suena: separa las letras con una pausa cortita. Es la letra que menos se usa.", example: "ОБЪЕКТ", latin: [] },
+  Э: { ch: "Э", low: "э", sound: "e", tip: "Una E al revés. Suena «e» como en eco. ¡Esta sí es la e de verdad!", example: "ЭХО", latin: [] },
+  Ю: { ch: "Ю", low: "ю", sound: "iu", tip: "Una I pegada a una O. Suena «iu», como en ciudad.", example: "ЮГ", latin: [] },
+  Я: { ch: "Я", low: "я", sound: "ia", tip: "Parece una R al revés. Suena «ia». Sola, significa «yo».", example: "ЯБЛОКО", latin: [] },
+  Ё: { ch: "Ё", low: "ё", sound: "io", tip: "La Е con dos puntos. Suena «io» y siempre lleva la fuerza de la palabra.", example: "ЁЛКА", latin: [] },
 };

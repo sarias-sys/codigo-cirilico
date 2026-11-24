@@ -4,10 +4,10 @@ Cada entrega es pequeña, se puede probar en el celular y no rompe el progreso g
 
 | # | Entrega | Estado |
 |---|---|---|
-| 1 | Misiones 0.1 y 0.2, Patrulla nocturna, cartas, escuadrón, informe, app instalable | Esta entrega |
-| 2 | Misiones 0.3 y 0.4: el alfabeto completo (33 letras). Archivos secretos 3 y 4 | Siguiente |
-| 3 | Audio grabado por voces rusas de calidad para cada letra y palabra | |
-| 4 | Expediente 1 · Más allá del río (A1): saludar y presentarse. Entra Лев | |
+| 1 | Misiones 0.1 y 0.2, Patrulla nocturna, cartas, escuadrón, informe, app instalable | Hecha |
+| 2 | Misiones 0.3 y 0.4: el alfabeto completo (33 letras). Archivos secretos 3 y 4 | Esta entrega |
+| 3 | Audio grabado por voces rusas de calidad para cada letra y palabra (ElevenLabs, pago único de unos 0,65 USD en créditos) | Esta entrega |
+| 4 | Expediente 1 · Más allá del río (A1): saludar y presentarse. Entra Лев | Siguiente |
 | 5 | Hablar: el jugador dice la palabra al micrófono y la app la reconoce | |
 | 6 | Expediente 2 · El mercado de la frontera (A1): números, dinero y comida. Entra Мира | |
 | 7 | Ilustraciones de personajes y escenas; música | |
@@ -22,5 +22,5 @@ Cada entrega es pequeña, se puede probar en el celular y no rompe el progreso g
 
 ## Riesgos
 
-- La voz rusa del teléfono no existe en todos los equipos: se avisa y se muestra la pronunciación escrita. La entrega 3 lo resuelve.
-- Si se borran los datos del navegador, se pierde el progreso. Más adelante se puede agregar exportar o importar el progreso.
+- La voz rusa del teléfono no existe en todos los equipos. Resuelto en la entrega 3: audios grabados que funcionan sin internet; la voz del teléfono queda solo de respaldo.
+- Si se borran los datos del navegador, se pierde el progreso. Mitigado: el jugador guarda una copia con un código (pestaña Escuadrón) y el mapa le recuerda hacerlo cada semana.

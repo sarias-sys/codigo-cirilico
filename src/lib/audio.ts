@@ -1,5 +1,35 @@
+import { VOICE } from "../content/voice";
+import { normalize } from "./text";
+
+let clip: HTMLAudioElement | null = null;
+
+/** Ruta del audio grabado de una letra o palabra, o null si no hay. */
+export function clipUrl(text: string): string | null {
+  const file = VOICE[normalize(text)];
+  return file ? `${import.meta.env.BASE_URL}voz/${file}` : null;
+}
+
+/**
+ * Pronuncia en ruso: primero el audio grabado con voz natural; si no hay o no carga, la voz del teléfono.
+ * onFail se llama si no hay ninguna de las dos, para avisarle al jugador.
+ */
+export function say(text: string, onFail: () => void = () => {}): void {
+  const url = clipUrl(text);
+  if (url) {
+    try {
+      clip?.pause();
+      window.speechSynthesis?.cancel();
+      clip = new Audio(url);
+      const played = clip.play();
+      if (played && typeof played.catch === "function") played.catch(() => { if (!sayWithPhone(text)) onFail(); });
+      return;
+    } catch { /* sin audio: usamos la voz del teléfono */ }
+  }
+  if (!sayWithPhone(text)) onFail();
+}
+
 /** Voz rusa del teléfono. Devuelve false si el teléfono no tiene voz en ruso. */
-export function say(text: string): boolean {
+function sayWithPhone(text: string): boolean {
   try {
     if (!("speechSynthesis" in window)) return false;
     const voices = window.speechSynthesis.getVoices();
