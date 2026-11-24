@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useGame } from "../game";
 import { LETTERS, describeLetter } from "../content/letters";
-import { MISSIONS, lettersThrough, wordByRu, wordsThrough, type Mission as M } from "../content/missions";
+import { MISSIONS, fillName, lettersThrough, wordByRu, wordsThrough, type Mission as M, type Talk as T } from "../content/missions";
 import { completeMission, recordAnswer } from "../lib/progress";
 import { normalize, ruName } from "../lib/text";
 import { options, shuffle } from "../lib/random";
-import { Crest, EnemyFace, Keyboard, Rich, Shield, Slots, TopBar, useTyping } from "../ui";
+import { Crest, EnemyFace, Keyboard, Rich, Shield, Slots, TopBar, codeClass, useTyping } from "../ui";
 
-type Phase = "intro" | "lesson" | "read" | "write" | "boss" | "reward";
+type Phase = "intro" | "lesson" | "read" | "talk" | "write" | "boss" | "reward";
 
 export default function Mission({ id }: { id: string }) {
   const { go, update, today, play } = useGame();
@@ -17,8 +17,11 @@ export default function Mission({ id }: { id: string }) {
   const exit = () => go({ name: "map" });
   switch (phase) {
     case "intro": return <Story mission={mission} onExit={exit} onDone={() => setPhase("lesson")} />;
-    case "lesson": return <Lesson mission={mission} onExit={exit} onDone={() => setPhase("read")} />;
-    case "read": return <Read mission={mission} onExit={exit} onDone={() => setPhase("write")} />;
+    case "lesson": return mission.letters.length
+      ? <Lesson mission={mission} onExit={exit} onDone={() => setPhase("read")} />
+      : <Phrases mission={mission} onExit={exit} onDone={() => setPhase("read")} />;
+    case "read": return <Read mission={mission} onExit={exit} onDone={() => setPhase(mission.talk?.length ? "talk" : "write")} />;
+    case "talk": return <Talk mission={mission} onExit={exit} onDone={() => setPhase("write")} />;
     case "write": return <Write mission={mission} onExit={exit} onDone={() => setPhase("boss")} />;
     case "boss": return <Boss mission={mission} onExit={exit} onWin={() => { play("win"); update((p) => completeMission(p, mission, today)); setPhase("reward"); }} />;
     case "reward": return <Reward mission={mission} />;
@@ -52,7 +55,7 @@ function Story({ mission, onExit, onDone }: Step) {
       <div className="dots" aria-hidden="true">{mission.intro.map((_, k) => <i key={k} className={k <= i ? "on" : ""} />)}</div>
       {last ? (
         <div className="choices">
-          <button className="btn" onClick={onDone}>Listo, capitana</button>
+          <button className="btn" onClick={onDone}>{mission.level === 0 ? "Listo, capitana" : "¡Vamos!"}</button>
           {!why && mission.id === "0.1" ? <button className="btn ghost" onClick={() => setWhy(true)}>¿Qué es el cirílico?</button> : null}
         </div>
       ) : <button className="btn" onClick={() => setI(i + 1)}>Siguiente</button>}
@@ -125,6 +128,107 @@ function Lesson({ mission, onExit, onDone }: Step) {
   );
 }
 
+type PhraseStep = { kind: "intro" | "check"; ru: string; opts: string[] };
+
+/** Lección de frases: cuando la misión ya no trae letras nuevas, enseña frases para hablar. */
+function Phrases({ mission, onExit, onDone }: Step) {
+  const { speak, play, update } = useGame();
+  const steps = useMemo<PhraseStep[]>(() => {
+    const pool = wordsThrough(mission.id).map((w) => w.es);
+    return (mission.learn ?? []).flatMap((ru) => [
+      { kind: "intro" as const, ru, opts: [] },
+      { kind: "check" as const, ru, opts: options(wordByRu(ru).es, pool, 3) },
+    ]);
+  }, [mission]);
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
+  const s = steps[i];
+  const w = wordByRu(s.ru);
+  const next = () => { setPicked(null); if (i < steps.length - 1) setI(i + 1); else onDone(); };
+
+  if (s.kind === "intro") {
+    return (
+      <section className="screen">
+        <TopBar onClose={onExit} step={i} total={steps.length} />
+        <div className="label">Frase nueva</div>
+        <div className="lettercard">
+          <button className="phrase" onClick={() => speak(w.ru)} aria-label={`Escuchar ${w.ru}`} lang="ru">{w.ru}</button>
+          <div className="sound">se dice «{w.tr}»</div>
+          <p className="tip"><b className="fg">{w.es}</b>{w.note ? <><br />{w.note}</> : null}</p>
+          <button className="audio" onClick={() => speak(w.ru)}>▶ Escuchar</button>
+        </div>
+        <div className="spacer" />
+        <button className="btn" onClick={next}>Entendido</button>
+      </section>
+    );
+  }
+
+  const done = picked !== null;
+  const right = picked === w.es;
+  return (
+    <section className="screen">
+      <TopBar onClose={onExit} step={i} total={steps.length} />
+      <div className="label">Prueba rápida</div>
+      <h2>¿Qué significa?</h2>
+      <div className={codeClass(w.ru)} lang="ru">{w.ru}</div>
+      <div className="opts">
+        {s.opts.map((o) => (
+          <button key={o} disabled={done}
+            className={`opt ${done && o === w.es ? "right" : ""} ${done && o === picked && !right ? "wrong" : ""}`}
+            onClick={() => { const ok = o === w.es; setPicked(o); play(ok ? "ok" : "bad"); update((p) => recordAnswer(p, ok)); speak(w.ru); }}>{o}</button>
+        ))}
+      </div>
+      <div className={`feedback ${done ? (right ? "ok" : "bad") : ""}`} role="status">
+        {done ? (right ? `¡Exacto! Se dice «${w.tr}».` : `${w.ru} significa «${w.es}».`) : ""}
+      </div>
+      <div className="spacer" />
+      <button className="btn" disabled={!done} onClick={next}>Continuar</button>
+    </section>
+  );
+}
+
+/** Conversación: un personaje habla y el jugador elige qué responderle en ruso. */
+function Talk({ mission, onExit, onDone }: Step) {
+  const { speak, play, update, p } = useGame();
+  const ru = ruName(p.name);
+  const items = useMemo(() => (mission.talk ?? []).map((t) => ({ t, opts: shuffle([t.answer, ...t.wrong]) })), [mission]);
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
+  const { t, opts } = items[i];
+  const done = picked !== null;
+  const right = picked === t.answer;
+  const sayAnswer = (x: T) => speak(fillName(x.answer, ""));
+  return (
+    <section className="screen">
+      <TopBar onClose={onExit} step={i + (done ? 1 : 0)} total={items.length} />
+      <div className="label">Conversación</div>
+      <p className="sub">{t.ctx}</p>
+      <div className="bubble talk">
+        <div className="who">{t.who}</div>
+        <div className="says" lang="ru">{t.says}</div>
+        <div className="sub">«{t.tr}» · {t.es}</div>
+        <button className="audio" onClick={() => speak(t.says)}>▶ Escuchar</button>
+      </div>
+      <h2>¿Qué le respondes?</h2>
+      <div className="opts">
+        {opts.map((o) => (
+          <button key={o} disabled={done} lang="ru"
+            className={`opt ru-opt ${done && o === t.answer ? "right" : ""} ${done && o === picked && !right ? "wrong" : ""}`}
+            onClick={() => { const ok = o === t.answer; setPicked(o); play(ok ? "ok" : "bad"); update((x) => recordAnswer(x, ok)); sayAnswer(t); }}>{fillName(o, ru)}</button>
+        ))}
+      </div>
+      <div className={`feedback ${done ? (right ? "ok" : "bad") : ""}`} role="status">
+        {done ? `${right ? "¡Bien dicho! " : `Mejor: «${fillName(t.answer, ru)}». `}${fillName(t.why, ru)}` : ""}
+        {done ? <button className="audio inline" onClick={() => sayAnswer(t)}>▶ Otra vez</button> : null}
+      </div>
+      <div className="spacer" />
+      <button className="btn" disabled={!done} onClick={() => { setPicked(null); if (i < items.length - 1) setI(i + 1); else onDone(); }}>
+        {i < items.length - 1 ? "Siguiente" : "Ahora, a escribir"}
+      </button>
+    </section>
+  );
+}
+
 function Read({ mission, onExit, onDone }: Step) {
   const { speak, play, update } = useGame();
   const items = useMemo(() => {
@@ -140,7 +244,7 @@ function Read({ mission, onExit, onDone }: Step) {
     <section className="screen">
       <TopBar onClose={onExit} step={i + (done ? 1 : 0)} total={items.length} />
       <div className="label">Descifra el mensaje</div>
-      <div className="code" lang="ru">{w.ru}</div>
+      <div className={codeClass(w.ru)} lang="ru">{w.ru}</div>
       <div className="opts">
         {opts.map((o) => (
           <button key={o} disabled={done}
@@ -154,7 +258,7 @@ function Read({ mission, onExit, onDone }: Step) {
       </div>
       <div className="spacer" />
       <button className="btn" disabled={!done} onClick={() => { setPicked(null); if (i < items.length - 1) setI(i + 1); else onDone(); }}>
-        {i < items.length - 1 ? "Siguiente" : "Ahora, a escribir"}
+        {i < items.length - 1 ? "Siguiente" : mission.talk?.length ? "Ahora, a conversar" : "Ahora, a escribir"}
       </button>
     </section>
   );
@@ -289,7 +393,7 @@ function Boss({ mission, onExit, onWin }: { mission: M; onExit: () => void; onWi
       {mode === "read" ? (
         <>
           <p className="sub">{mission.boss.readPrompt}</p>
-          <div className="code" lang="ru">{w.ru}</div>
+          <div className={codeClass(w.ru)} lang="ru">{w.ru}</div>
           <div className="timer"><i style={{ width: `${(left / seconds) * 100}%` }} /></div>
           <div className="opts">{opts.map((o) => <button key={o} className="opt" onClick={() => answer(o)}>{o}</button>)}</div>
         </>
@@ -313,6 +417,7 @@ function Reward({ mission }: { mission: M }) {
   const nameLetters = [...new Set([...ru.toUpperCase()].filter((c) => /[А-ЯЁ]/.test(c)))];
   const known = nameLetters.filter((c) => learned.includes(c));
   const wholeName = nameLetters.length > 0 && known.length === nameLetters.length;
+  const isLetters = mission.letters.length > 0;
   const nextMission = MISSIONS[MISSIONS.findIndex((m) => m.id === mission.id) + 1];
   return (
     <section className="screen">
@@ -321,14 +426,16 @@ function Reward({ mission }: { mission: M }) {
         <h2>¡Lo lograste, {p.name || "cadete"}!</h2>
         <p className="sub"><Rich text={mission.outro} /></p>
         <div className="xp">+{mission.xp} XP</div>
-        <div className="cards six">{mission.letters.map((l, i) => <div key={l} className="card got pulse" style={{ animationDelay: `${i * 0.08}s` }} lang="ru">{l}</div>)}</div>
-        {wholeName
+        {isLetters
+          ? <div className="cards six">{mission.letters.map((l, i) => <div key={l} className="card got pulse" style={{ animationDelay: `${i * 0.08}s` }} lang="ru">{l}</div>)}</div>
+          : <div className="chips">{(mission.learn ?? []).map((w, i) => <span key={w} className="chip pulse" style={{ animationDelay: `${i * 0.08}s` }} lang="ru">{w}</span>)}</div>}
+        {!isLetters ? null : wholeName
           ? <p className="sub">¡Ya sabes leer y escribir tu nombre completo en ruso: <b className="fg" lang="ru">{ru}</b>!</p>
           : known.length ? <p className="sub">Tu nombre en ruso, <b className="fg" lang="ru">{ru}</b>, ya tiene letras que sabes leer: {known.join(" ")}.</p> : null}
-        <div className="secret"><div className="label">Archivo secreto {MISSIONS.indexOf(mission) + 1} de 12</div>{mission.secret}</div>
-        <p className="sub">Desde mañana estas letras y palabras aparecerán en la <b className="fg">Patrulla nocturna</b> para que no se te olviden.</p>
+        <div className="secret"><div className="label">Archivo secreto {MISSIONS.indexOf(mission) + 1} de 12</div><Rich text={mission.secret} /></div>
+        <p className="sub">Desde mañana {isLetters ? "estas letras y palabras" : "estas frases"} aparecerán en la <b className="fg">Patrulla nocturna</b> para que no se te olviden.</p>
       </div>
-      {!nextMission ? <p className="sub">El Expediente 1 está en camino. Mientras tanto, la Patrulla nocturna te mantiene en forma.</p> : null}
+      {!nextMission ? <p className="sub">El Expediente 2 está en camino. Mientras tanto, la Patrulla nocturna te mantiene en forma.</p> : null}
       {nextMission ? <button className="btn" onClick={() => go({ name: "mission", id: nextMission.id })}>Siguiente misión: {nextMission.title}</button> : null}
       <button className={nextMission ? "btn ghost" : "btn"} onClick={() => go({ name: "map" })}>Volver al mapa</button>
     </section>

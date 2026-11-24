@@ -81,6 +81,9 @@ export function Slots({ text, state }: { text: string; state?: "ok" | "bad" }) {
 }
 
 /** Teclado cirílico en pantalla, en el orden del alfabeto para que también lo memorice. */
+/** Clase del recuadro grande de una palabra: las frases largas usan letra más pequeña para caber en el teléfono. */
+export const codeClass = (text: string) => (text.length > 9 ? "code long" : "code");
+
 export function Keyboard({ keys, onKey, onDel }: { keys: string[]; onKey: (k: string) => void; onDel: () => void }) {
   const sorted = [...keys].sort((a, b) => ALPHABET.indexOf(a) - ALPHABET.indexOf(b));
   const cols = keys.length > 24 ? 7 : keys.length > 12 ? 6 : keys.length > 8 ? 5 : 4;

@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { VOICE } from "../content/voice";
 import { ALPHABET, LETTERS } from "../content/letters";
-import { MISSIONS, WORDS, lettersThrough, missionWords, wordByRu } from "../content/missions";
-import { normalize } from "../lib/text";
+import { LEVELS, MISSIONS, WORDS, fillName, lettersThrough, missionWords, wordByRu } from "../content/missions";
+import { normalize, voiceKey } from "../lib/text";
 
 /**
  * Reglas pedagógicas: nunca se le pide al jugador leer o escribir una letra que no le hemos enseñado.
@@ -18,7 +18,7 @@ describe("contenido de las misiones", () => {
   });
 
   it("al terminar el nivel 0 se conocen las 33 letras", () => {
-    expect(new Set(MISSIONS.flatMap((m) => m.letters))).toEqual(new Set(ALPHABET));
+    expect(new Set(MISSIONS.filter((m) => m.level === 0).flatMap((m) => m.letters))).toEqual(new Set(ALPHABET));
     for (const l of ALPHABET) expect(LETTERS[l], `ficha de ${l}`).toBeDefined();
   });
 
@@ -35,7 +35,7 @@ describe("contenido de las misiones", () => {
     for (const m of MISSIONS) {
       const known = new Set(lettersThrough(m.id));
       for (const w of missionWords(m)) {
-        for (const ch of normalize(w.ru).replace(/ /g, "")) expect(known.has(ch), `${w.ru} en misión ${m.id} usa ${ch}`).toBe(true);
+        for (const ch of normalize(w.ru).replace(/[^А-ЯЁ]/g, "")) expect(known.has(ch), `${w.ru} en misión ${m.id} usa ${ch}`).toBe(true);
       }
       for (const ru of [...m.read, ...m.write.map((x) => x.ru)]) expect(() => wordByRu(ru)).not.toThrow();
     }
@@ -59,6 +59,30 @@ describe("contenido de las misiones", () => {
     expect(new Set(WORDS.map((w) => w.es)).size).toBe(WORDS.length);
   });
 
+  it("las misiones sin letras nuevas enseñan frases, y cada nivel aparece en el mapa en orden", () => {
+    for (const m of MISSIONS) {
+      if (!m.letters.length) expect((m.learn ?? []).length, `frases de ${m.id}`).toBeGreaterThanOrEqual(3);
+      for (const ru of m.learn ?? []) expect(() => wordByRu(ru)).not.toThrow();
+      expect(LEVELS[m.level], `nivel ${m.level}`).toBeDefined();
+    }
+    const levels = MISSIONS.map((m) => m.level);
+    expect([...levels].sort((a, b) => a - b)).toEqual(levels);
+  });
+
+  it("en cada conversación hay una sola respuesta correcta, sin repetir opciones y con letras conocidas", () => {
+    for (const m of MISSIONS) {
+      const known = new Set(lettersThrough(m.id));
+      for (const t of m.talk ?? []) {
+        const opts = [t.answer, ...t.wrong];
+        expect(new Set(opts).size, t.says).toBe(opts.length);
+        expect(t.wrong.length).toBeGreaterThanOrEqual(2);
+        for (const text of [t.says, ...opts]) {
+          for (const ch of normalize(fillName(text, "")).replace(/[^А-ЯЁ]/g, "")) expect(known.has(ch), `${text} usa ${ch}`).toBe(true);
+        }
+      }
+    }
+  });
+
   it("cada misión tiene suficientes palabras para armar opciones y el jefe", () => {
     for (const m of MISSIONS) {
       expect(m.read.length).toBeGreaterThanOrEqual(3);
@@ -69,9 +93,10 @@ describe("contenido de las misiones", () => {
 
 describe("voz grabada", () => {
   it("cada letra y cada palabra tiene su audio, y el archivo existe", () => {
-    const keys = [...ALPHABET, ...WORDS.map((w) => w.ru)];
+    const talk = MISSIONS.flatMap((m) => m.talk ?? []).flatMap((t) => [t.says, fillName(t.answer, "")]);
+    const keys = [...ALPHABET, ...WORDS.map((w) => w.ru), ...talk];
     for (const k of keys) {
-      const file = VOICE[k];
+      const file = VOICE[voiceKey(k)];
       expect(file, `audio de ${k}`).toBeDefined();
       expect(existsSync(join(process.cwd(), "public", "voz", file)), `public/voz/${file}`).toBe(true);
     }

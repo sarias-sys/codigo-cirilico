@@ -5,17 +5,28 @@ import { LETTERS } from "./letters";
  * las pruebas revisan que cada palabra use solo letras que el jugador ya aprendió.
  * {N} = nombre del jugador, {R} = su nombre en ruso.
  */
-export type Word = { ru: string; tr: string; es: string };
+export type Word = { ru: string; tr: string; es: string; note?: string };
 export type Line = { who: string; text: string; code?: string };
+
+/**
+ * Conversación: un personaje dice algo y el jugador elige qué responder (en ruso).
+ * {R} en una respuesta = nombre del jugador en ruso.
+ */
+export type Talk = { who: string; ctx: string; says: string; tr: string; es: string; answer: string; wrong: string[]; why: string };
 
 export type Mission = {
   id: string;
+  /** 0 = alfabeto; 1 = Expediente 1, etc. */
+  level: number;
   title: string;
   subtitle: string;
   letters: string[];
+  /** Frases nuevas que enseña la misión (cuando ya no hay letras nuevas). */
+  learn?: string[];
   intro: Line[];
   read: string[];
   write: { ru: string; listen?: boolean }[];
+  talk?: Talk[];
   boss: { name: string; ru: string; tagline: string; readPrompt: string; writePrompt: string; lose: string };
   secret: string;
   outro: string;
@@ -79,6 +90,30 @@ export const WORDS: Word[] = [
   { ru: "ЦАРЬ", tr: "tsar'", es: "zar" },
   { ru: "ТИШИНА", tr: "tishiná", es: "silencio" },
   { ru: "МЕНЯ ЗОВУТ", tr: "miniá zavút", es: "me llamo" },
+  // Expediente 1 · 1.1
+  { ru: "ЗДРАВСТВУЙТЕ", tr: "zdrástvuitie", es: "hola (con respeto)", note: "Para adultos y desconocidos. La primera В casi no se pronuncia." },
+  { ru: "ПОКА", tr: "paká", es: "chao", note: "Despedida entre amigos." },
+  { ru: "ДО СВИДАНИЯ", tr: "da svidánia", es: "adiós", note: "Despedida con respeto, para adultos." },
+  { ru: "ДОБРОЕ УТРО", tr: "dóbraie útra", es: "buenos días" },
+  { ru: "ДОБРЫЙ ВЕЧЕР", tr: "dóbryi viéchir", es: "buenas noches", note: "Para saludar al llegar en la noche, no para irse a dormir." },
+  { ru: "СПАСИБО", tr: "spasíba", es: "gracias" },
+  { ru: "ПОЖАЛУЙСТА", tr: "pazhálsta", es: "por favor / de nada", note: "Sirve para pedir algo y para responder a СПАСИБО. Se dice más corto de lo que se escribe." },
+  // 1.2
+  { ru: "КТО ТЫ?", tr: "kto ty?", es: "¿quién eres?" },
+  { ru: "КАК ТЕБЯ ЗОВУТ?", tr: "kak tibiá zavút?", es: "¿cómo te llamas?", note: "Literalmente: «¿cómo te llaman?». Se responde МЕНЯ ЗОВУТ…" },
+  { ru: "ОЧЕНЬ ПРИЯТНО", tr: "óchin' priiátna", es: "mucho gusto" },
+  { ru: "ТЫ", tr: "ty", es: "tú" },
+  { ru: "ОН", tr: "on", es: "él" },
+  { ru: "ОНА", tr: "aná", es: "ella" },
+  { ru: "МЫ", tr: "my", es: "nosotros" },
+  // 1.3
+  { ru: "КАК ДЕЛА?", tr: "kak dielá?", es: "¿cómo estás?", note: "Literalmente: «¿cómo van las cosas?»." },
+  { ru: "ХОРОШО", tr: "jarashó", es: "bien" },
+  { ru: "ПЛОХО", tr: "plója", es: "mal" },
+  { ru: "НОРМАЛЬНО", tr: "narmál'na", es: "más o menos" },
+  { ru: "ОТЛИЧНО", tr: "atlíchna", es: "excelente" },
+  { ru: "А ТЫ?", tr: "a ty?", es: "¿y tú?" },
+  { ru: "ИЗВИНИТЕ", tr: "izviníte", es: "perdón" },
 ];
 
 export const wordByRu = (ru: string): Word => {
@@ -90,6 +125,7 @@ export const wordByRu = (ru: string): Word => {
 export const MISSIONS: Mission[] = [
   {
     id: "0.1",
+    level: 0,
     title: "Letras gemelas",
     subtitle: "А К М О Т Е",
     letters: ["А", "К", "М", "О", "Т", "Е"],
@@ -114,6 +150,7 @@ export const MISSIONS: Mission[] = [
   },
   {
     id: "0.2",
+    level: 0,
     title: "Falsas amigas",
     subtitle: "Р Н В С У Х",
     letters: ["Р", "Н", "В", "С", "У", "Х"],
@@ -137,6 +174,7 @@ export const MISSIONS: Mission[] = [
   },
   {
     id: "0.3",
+    level: 0,
     title: "Símbolos nuevos",
     subtitle: "Б Г Д З И Й Л П Ф Ж",
     letters: ["Б", "Г", "Д", "З", "И", "Й", "Л", "П", "Ф", "Ж"],
@@ -160,6 +198,7 @@ export const MISSIONS: Mission[] = [
   },
   {
     id: "0.4",
+    level: 0,
     title: "Letras raras",
     subtitle: "Ц Ч Ш Щ Ы Ь Ъ Э Ю Я Ё",
     letters: ["Ц", "Ч", "Ш", "Щ", "Ы", "Ь", "Ъ", "Э", "Ю", "Я", "Ё"],
@@ -181,12 +220,122 @@ export const MISSIONS: Mission[] = [
     outro: "¡Ya conoces las 33 letras del alfabeto ruso! Ahora puedes presentarte como un ruso de verdad: <ru>Меня зовут {R}</ru>. Лев sonríe: «Ahora te enseñaré a hablar con la gente del otro lado».",
     xp: 120,
   },
+  {
+    id: "1.1",
+    level: 1,
+    title: "Primer contacto",
+    subtitle: "Saludar, agradecer y despedirte",
+    letters: [],
+    learn: ["ЗДРАВСТВУЙТЕ", "ДОБРОЕ УТРО", "ДОБРЫЙ ВЕЧЕР", "СПАСИБО", "ПОЖАЛУЙСТА", "ПОКА", "ДО СВИДАНИЯ"],
+    intro: [
+      { who: "Лев", text: "Del otro lado del río todavía vive gente, {N}. Se esconden de las Sombras en un refugio bajo la nieve." },
+      { who: "Лев", text: "No confían en nadie: las Sombras ya se han disfrazado de personas. Mira lo que hay escrito en la puerta del refugio:", code: "СКАЖИ ЗДРАВСТВУЙТЕ" },
+      { who: "Сова", text: "Dice «di <ru>ЗДРАВСТВУЙТЕ</ru>». Es una contraseña. Las Sombras saben leer ruso, pero no saben <b>ser educadas</b>. Quien no saluda bien, no entra." },
+      { who: "Лев", text: "En ruso hay dos «hola»: <ru>ПРИВЕТ</ru> para amigos y <ru>ЗДРАВСТВУЙТЕ</ru> para adultos y desconocidos. Hoy aprenderás a saludar, a dar las gracias y a despedirte." },
+    ],
+    read: ["ПРИВЕТ", "ПОКА", "СПАСИБО", "ДОБРОЕ УТРО", "ДО СВИДАНИЯ", "ПОЖАЛУЙСТА"],
+    talk: [
+      { who: "Вера", ctx: "Una anciana abre la puerta del refugio. Es una adulta que no conoces.", says: "ЗДРАВСТВУЙТЕ.", tr: "zdrástvuitie", es: "hola",
+        answer: "ЗДРАВСТВУЙТЕ!", wrong: ["ПРИВЕТ!", "ПОКА!"], why: "Con adultos y desconocidos se dice ЗДРАВСТВУЙТЕ. ПРИВЕТ es para amigos." },
+      { who: "Вера", ctx: "Vera te sirve una taza de té caliente.", says: "ВОТ ЧАЙ.", tr: "vot chai", es: "aquí tienes té",
+        answer: "СПАСИБО!", wrong: ["ПОЖАЛУЙСТА!", "ДО СВИДАНИЯ!"], why: "Cuando te dan algo, respondes СПАСИБО: «gracias»." },
+      { who: "Вера", ctx: "La ayudas a cargar leña y ella te da las gracias.", says: "СПАСИБО!", tr: "spasíba", es: "gracias",
+        answer: "ПОЖАЛУЙСТА!", wrong: ["ЗДРАВСТВУЙТЕ!", "ДОБРОЕ УТРО!"], why: "ПОЖАЛУЙСТА sirve para «por favor» y también para «de nada»." },
+      { who: "Лев", ctx: "Amanece. Лев se despierta junto al fuego.", says: "ДОБРОЕ УТРО!", tr: "dóbraie útra", es: "buenos días",
+        answer: "ДОБРОЕ УТРО!", wrong: ["ДОБРЫЙ ВЕЧЕР!", "ДО СВИДАНИЯ!"], why: "En la mañana: ДОБРОЕ УТРО. En la noche, al llegar: ДОБРЫЙ ВЕЧЕР." },
+    ],
+    write: [{ ru: "ПОКА" }, { ru: "СПАСИБО" }, { ru: "ПРИВЕТ", listen: true }, { ru: "ПОЖАЛУЙСТА", listen: true }],
+    boss: {
+      name: "Туман", ru: "Tumán, la Niebla", tagline: "Niebla que roba las palabras",
+      readPrompt: "Туман se traga las palabras del refugio. Descifra cada saludo antes de que desaparezca.",
+      writePrompt: "Туман borra la contraseña de la puerta. Escríbela de nuevo en ruso:",
+      lose: "Туман te envolvió y perdiste el camino. El refugio sigue esperándote.",
+    },
+    secret: "Vera se quedó mirando tu insignia: «Escuadrón К… Mi abuela decía que ese escuadrón desapareció hace cien años».",
+    outro: "Vera te deja entrar al refugio: «<ru>Добрый вечер</ru>, cadete». Adentro, alguien te vigila desde la oscuridad con una linterna.",
+    xp: 120,
+  },
+  {
+    id: "1.2",
+    level: 1,
+    title: "¿Quién eres?",
+    subtitle: "Presentarte: Меня зовут…",
+    letters: [],
+    learn: ["КТО ТЫ?", "КАК ТЕБЯ ЗОВУТ?", "ОЧЕНЬ ПРИЯТНО", "ТЫ", "ОН", "ОНА", "МЫ"],
+    intro: [
+      { who: "¿?", text: "¡No te muevas! Aquí las Sombras se hacen pasar por personas. Contesta:", code: "КТО ТЫ?" },
+      { who: "Лев", text: "Tranquilo, {N}. Es <ru>Ника</ru> (Nika), la exploradora del refugio. Anoche entró una Sombra con la cara de su hermano." },
+      { who: "Лев", text: "Las Sombras copian caras, pero no saben presentarse. Respóndele en ruso y te creerá." },
+      { who: "Ника", text: "Si eres humano, dime cómo te llamas. En ruso: <ru>Как тебя зовут?</ru>" },
+    ],
+    read: ["КТО ТЫ?", "ТЫ", "ОНА", "МЫ", "ОЧЕНЬ ПРИЯТНО", "КАК ТЕБЯ ЗОВУТ?"],
+    talk: [
+      { who: "Ника", ctx: "Ника te apunta con la linterna.", says: "КТО ТЫ?", tr: "kto ty?", es: "¿quién eres?",
+        answer: "Я {R}.", wrong: ["Я ВРАГ.", "ПОКА!"], why: "Te preguntó «¿quién eres?». «Я {R}» significa «soy {R}». ¡En ruso no hace falta decir «soy»!" },
+      { who: "Ника", ctx: "Ника todavía no está segura.", says: "КАК ТЕБЯ ЗОВУТ?", tr: "kak tibiá zavút?", es: "¿cómo te llamas?",
+        answer: "МЕНЯ ЗОВУТ {R}.", wrong: ["ДОБРОЕ УТРО!", "СПАСИБО!"], why: "A «КАК ТЕБЯ ЗОВУТ?» se responde «МЕНЯ ЗОВУТ…»: «me llamo…»." },
+      { who: "Ника", ctx: "Ника baja la linterna y se presenta.", says: "МЕНЯ ЗОВУТ НИКА.", tr: "miniá zavút Nika", es: "me llamo Nika",
+        answer: "ОЧЕНЬ ПРИЯТНО!", wrong: ["ДО СВИДАНИЯ!", "КТО ТЫ?"], why: "Cuando alguien se presenta, dices ОЧЕНЬ ПРИЯТНО: «mucho gusto»." },
+      { who: "Ника", ctx: "Ника señala a Лев con desconfianza.", says: "А ОН КТО?", tr: "a on kto?", es: "¿y él quién es?",
+        answer: "ОН ДРУГ.", wrong: ["ОН ВРАГ.", "ОНА ДРУГ."], why: "ОН = «él» y ДРУГ = «amigo». ОНА sería «ella»." },
+    ],
+    write: [{ ru: "ТЫ" }, { ru: "ОН" }, { ru: "ОНА", listen: true }, { ru: "МЫ", listen: true }],
+    boss: {
+      name: "Двойник", ru: "Dvóinik, el Doble", tagline: "Sombra que copia caras",
+      readPrompt: "Двойник tiene tu misma cara y le habla en ruso a Ника para confundirla. Descifra sus palabras.",
+      writePrompt: "Ника no sabe cuál de los dos es el verdadero. Escríbele en ruso:",
+      lose: "Двойник escapó con tu cara puesta. Ника todavía duda de ti.",
+    },
+    secret: "Ника te muestra un papel viejo de su bisabuela: «Un día llegará un cadete que no sabe ni una letra. En ruso se llamará <ru>{R}</ru>».",
+    outro: "Ника sonríe por primera vez: «<ru>Очень приятно</ru>, {R}». Ya confía en ti. Pero en el refugio todos están cansados… y Тень anda cerca.",
+    xp: 140,
+  },
+  {
+    id: "1.3",
+    level: 1,
+    title: "¿Cómo estás?",
+    subtitle: "Preguntar y responder: Как дела?",
+    letters: [],
+    learn: ["КАК ДЕЛА?", "ХОРОШО", "ОТЛИЧНО", "НОРМАЛЬНО", "ПЛОХО", "А ТЫ?", "ИЗВИНИТЕ"],
+    intro: [
+      { who: "Сова", text: "{N}, buen trabajo. Ahora todo el refugio quiere conocerte. Aquí la gente no pregunta «¿cómo estás?»: pregunta <ru>Как дела?</ru>, «¿cómo van las cosas?»." },
+      { who: "Ника", text: "Esta mañana encontramos esto escrito en la nieve, frente a la puerta:", code: "Я ЗДЕСЬ" },
+      { who: "Лев", text: "Es la letra de <ru>Тень</ru>. Dice «estoy aquí». Volvió por ti, {N}." },
+      { who: "Сова", text: "Aprende a decir cómo estás y a pedir perdón. Y prepárate: esta noche Тень vendrá al refugio." },
+    ],
+    read: ["КАК ДЕЛА?", "ХОРОШО", "ПЛОХО", "ОТЛИЧНО", "А ТЫ?", "ИЗВИНИТЕ"],
+    talk: [
+      { who: "Вера", ctx: "Llegas al refugio sano y salvo. Estás feliz.", says: "КАК ДЕЛА?", tr: "kak dielá?", es: "¿cómo estás?",
+        answer: "ОТЛИЧНО!", wrong: ["ПЛОХО.", "ИЗВИНИТЕ!"], why: "Estás feliz: ОТЛИЧНО, «excelente». ПЛОХО sería «mal»." },
+      { who: "Ника", ctx: "Estás bien y quieres preguntarle a Ника cómo está ella.", says: "ПРИВЕТ! КАК ДЕЛА?", tr: "priviét! kak dielá?", es: "¡hola! ¿cómo estás?",
+        answer: "ХОРОШО. А ТЫ?", wrong: ["ХОРОШО. ПОКА!", "ЗДРАВСТВУЙТЕ."], why: "ХОРОШО = «bien» y А ТЫ? = «¿y tú?». Así la conversación sigue." },
+      { who: "Лев", ctx: "Sin querer pisas el pie de Лев.", says: "АЙ!", tr: "ai!", es: "¡ay!",
+        answer: "ИЗВИНИТЕ!", wrong: ["ОТЛИЧНО!", "ПРИВЕТ!"], why: "Para pedir perdón: ИЗВИНИТЕ." },
+      { who: "Лев", ctx: "Es de noche. Лев se va a hacer la guardia.", says: "ПОКА, ДРУГ!", tr: "paká, druk!", es: "¡chao, amigo!",
+        answer: "ПОКА!", wrong: ["ДОБРОЕ УТРО!", "ЗДРАВСТВУЙТЕ!"], why: "Entre amigos, para despedirse: ПОКА." },
+    ],
+    write: [{ ru: "ХОРОШО" }, { ru: "ПЛОХО" }, { ru: "ОТЛИЧНО", listen: true }, { ru: "НОРМАЛЬНО", listen: true }],
+    boss: {
+      name: "Тень", ru: "Ten', la Sombra", tagline: "Ha vuelto por ti",
+      readPrompt: "Тень grita en ruso alrededor del refugio. Descifra cada palabra para mantener encendida la hoguera.",
+      writePrompt: "La hoguera se apaga. Escribe la palabra en ruso para avivarla:",
+      lose: "Тень apagó la hoguera y se escondió en la nieve. El refugio aguanta hasta el amanecer.",
+    },
+    secret: "Antes de huir, Тень te llamó por tu nombre en ruso: «<ru>{R}</ru>… ¿de verdad no te acuerdas de mí?».",
+    outro: "¡Expediente 1 resuelto! Ya sabes saludar, presentarte y preguntar cómo están. Лев mira hacia el sur: «Mañana vamos al mercado de la frontera. Allí tendrás que contar… y regatear».",
+    xp: 160,
+  },
 ];
 
 export const UPCOMING = [
-  { id: "1", title: "Expediente 1 · Más allá del río", subtitle: "Saludar y presentarte: Привет!" },
-  { id: "2", title: "Expediente 2 · El mercado de la frontera", subtitle: "Números, dinero y comida" },
+  { id: "2", title: "Expediente 2 · El mercado de la frontera", subtitle: "Números, dinero y comida", icon: "₽" },
 ];
+
+/** Nombre de cada nivel en el mapa. */
+export const LEVELS: Record<number, string> = {
+  0: "Nivel 0 · El alfabeto",
+  1: "Expediente 1 · Más allá del río",
+};
 
 /** Letras aprendidas hasta la misión indicada (incluida). */
 export function lettersThrough(missionId: string): string[] {
@@ -200,8 +349,14 @@ export function wordsThrough(missionId: string): Word[] {
   return MISSIONS.slice(0, i + 1).flatMap(missionWords);
 }
 
+/** Texto para mostrar o pronunciar una respuesta de conversación: {R} es el nombre en ruso. */
+export const fillName = (s: string, ru: string) => s.replaceAll("{R}", ru);
+
+/** Letra o frase que identifica una misión en el mapa. */
+export const missionIcon = (m: Mission) => m.letters[0] ?? (m.learn?.[0] ?? m.read[0])[0];
+
 /** Palabras que enseña una misión: las de leer, escribir y los ejemplos de sus letras. */
 export function missionWords(m: Mission): Word[] {
-  const ru = new Set([...m.read, ...m.write.map((w) => w.ru), ...m.letters.map((l) => LETTERS[l].example)]);
+  const ru = new Set([...(m.learn ?? []), ...m.read, ...m.write.map((w) => w.ru), ...m.letters.map((l) => LETTERS[l].example)]);
   return WORDS.filter((w) => ru.has(w.ru));
 }

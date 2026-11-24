@@ -6,7 +6,7 @@ import { finishReview, reviewItem } from "../lib/progress";
 import { isDue } from "../lib/srs";
 import { normalize } from "../lib/text";
 import { options, shuffle } from "../lib/random";
-import { Keyboard, Slots, TabBar, TopBar, useTyping } from "../ui";
+import { Keyboard, Slots, TabBar, TopBar, useTyping, codeClass } from "../ui";
 
 const MAX_ITEMS = 10;
 
@@ -117,7 +117,7 @@ function ReviewCard({ card, step, total, onAnswered, onNext }: { card: Card; ste
     body = (
       <>
         <h2>¿Qué significa?</h2>
-        <div className="code" lang="ru">{w.ru}</div>
+        <div className={codeClass(w.ru)} lang="ru">{w.ru}</div>
         <div className="opts">{card.opts.map((o) => <button key={o} disabled={done} className={`opt ${done && o === w.es ? "right" : ""} ${done && o === result.given && !result.ok ? "wrong" : ""}`} onClick={() => answer(o, o === w.es)}>{o}</button>)}</div>
       </>
     );
