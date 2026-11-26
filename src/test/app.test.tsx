@@ -119,6 +119,18 @@ describe("la app", () => {
     expect(screen.getByRole("status").textContent).toMatch(/Mejor: «МЕНЯ ЗОВУТ Анна\.»/);
   });
 
+  it("al terminar el Expediente 1 se abre el mercado y llega Мира", () => {
+    let p = { ...fresh(), name: "Ana" };
+    for (const m of MISSIONS.filter((x) => x.level <= 1)) p = completeMission(p, m, dayOf());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    render(<App />);
+    expect(screen.getByText("Expediente 2 · El mercado de la frontera")).toBeTruthy();
+    expect(screen.getByText(/Misión 2.1 · Cuenta conmigo/).closest("button")?.disabled).toBe(false);
+    expect(screen.getByText(/Misión 2.2/).closest("button")?.disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /Escuadrón/ }));
+    expect(screen.getByText(/Cuenta cada moneda del escuadrón/)).toBeTruthy();
+  });
+
   describe("hablar al micrófono", () => {
     const heard: string[][] = [];
     class FakeRec {

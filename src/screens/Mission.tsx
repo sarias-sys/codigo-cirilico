@@ -526,7 +526,7 @@ function Reward({ mission }: { mission: M }) {
         <div className="secret"><div className="label">Archivo secreto {MISSIONS.indexOf(mission) + 1} de 12</div><Rich text={mission.secret} /></div>
         <p className="sub">Desde mañana {isLetters ? "estas letras y palabras" : "estas frases"} aparecerán en la <b className="fg">Patrulla nocturna</b> para que no se te olviden.</p>
       </div>
-      {!nextMission ? <p className="sub">El Expediente 2 está en camino. Mientras tanto, la Patrulla nocturna te mantiene en forma.</p> : null}
+      {!nextMission ? <p className="sub">El siguiente expediente está en camino. Mientras tanto, la Patrulla nocturna te mantiene en forma.</p> : null}
       {nextMission ? <button className="btn" onClick={() => go({ name: "mission", id: nextMission.id })}>Siguiente misión: {nextMission.title}</button> : null}
       <button className={nextMission ? "btn ghost" : "btn"} onClick={() => go({ name: "map" })}>Volver al mapa</button>
     </section>
