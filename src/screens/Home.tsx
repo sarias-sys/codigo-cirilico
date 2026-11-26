@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../game";
-import { MISSIONS, UPCOMING } from "../content/missions";
+import { LEVELS, MISSIONS, UPCOMING, missionIcon } from "../content/missions";
 import { ruName } from "../lib/text";
 import { rank } from "../lib/progress";
 import { isDue } from "../lib/srs";
@@ -56,33 +56,37 @@ export function MapScreen() {
             💾 <b>Guarda una copia de tu progreso</b> para no perderlo si cambias de celular. Toma 10 segundos.
           </button>
         ) : null}
-        <div className="section-t">Nivel 0 · El alfabeto</div>
-        <div className="missions">
-          {MISSIONS.map((m, i) => {
+        {Object.entries(LEVELS).map(([level, title]) => (
+          <div key={level}>
+            <div className="section-t">{title}</div>
+            <div className="missions">
+              {MISSIONS.map((m, i) => ({ m, i })).filter(({ m }) => m.level === +level).map(({ m, i }) => {
             const done = p.completed.includes(m.id);
             const open = i === 0 || p.completed.includes(MISSIONS[i - 1].id);
             const st = done ? "done" : open ? "open" : "locked";
             return (
               <button key={m.id} className={`mission ${st}`} disabled={st === "locked"} onClick={() => go({ name: "mission", id: m.id })}>
-                <span className="ic" lang="ru">{m.letters[0]}</span>
-                <span><b>Misión {m.id} · {m.title}</b><small lang="ru">{m.subtitle}</small></span>
+                <span className="ic" lang="ru">{missionIcon(m)}</span>
+                <span><b>Misión {m.id} · {m.title}</b><small lang={m.level === 0 ? "ru" : undefined}>{m.subtitle}</small></span>
                 <span className="st">{done ? "REPETIR" : open ? "JUGAR" : "🔒"}</span>
               </button>
             );
-          })}
-        </div>
-        <div className="section-t">Nivel 1 · Primeras misiones</div>
-        <div className="missions">{UPCOMING.map((m) => <Locked key={m.id} {...m} />)}</div>
+              })}
+            </div>
+          </div>
+        ))}
+        <div className="section-t">Próximamente</div>
+        <div className="missions">{UPCOMING.map((m) => <Locked key={m.id} id={m.id} title={m.title} subtitle={m.subtitle} icon={m.icon} />)}</div>
       </section>
       <TabBar current="map" />
     </>
   );
 }
 
-function Locked({ id, title, subtitle }: { id: string; title: string; subtitle: string }) {
+function Locked({ id, title, subtitle, icon }: { id: string; title: string; subtitle: string; icon?: string }) {
   return (
     <div className="mission locked" aria-disabled="true">
-      <span className="ic" lang="ru">{subtitle.trim()[0]}</span>
+      <span className="ic" lang="ru">{icon ?? subtitle.trim()[0]}</span>
       <span><b>{id.includes(".") ? `Misión ${id} · ` : ""}{title}</b><small lang="ru">{subtitle}</small></span>
       <span className="st">PRONTO</span>
     </div>

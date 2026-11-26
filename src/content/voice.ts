@@ -1,6 +1,6 @@
 /**
  * Audios grabados con voz rusa natural (ElevenLabs, voz «Viktoriya Voloshina»), guardados en public/voz/.
- * Clave: la letra o la palabra en mayúsculas, como aparece en letters.ts y missions.ts.
+ * Clave: la letra o la frase en mayúsculas y sin signos (voiceKey), como en letters.ts y missions.ts.
  * Las letras se graban con su nombre ruso (Б = «бэ»). Si falta un audio, la app usa la voz del teléfono.
  */
 export const VOICE: Record<string, string> = {
@@ -89,4 +89,33 @@ export const VOICE: Record<string, string> = {
   "ЦАРЬ": "w50.mp3",
   "ТИШИНА": "w51.mp3",
   "МЕНЯ ЗОВУТ": "w52.mp3",
+  "ЗДРАВСТВУЙТЕ": "w53.mp3",
+  "ПОКА": "w54.mp3",
+  "ДО СВИДАНИЯ": "w55.mp3",
+  "ДОБРОЕ УТРО": "w56.mp3",
+  "ДОБРЫЙ ВЕЧЕР": "w57.mp3",
+  "СПАСИБО": "w58.mp3",
+  "ПОЖАЛУЙСТА": "w59.mp3",
+  "КТО ТЫ": "w60.mp3",
+  "КАК ТЕБЯ ЗОВУТ": "w61.mp3",
+  "ОЧЕНЬ ПРИЯТНО": "w62.mp3",
+  "ТЫ": "w63.mp3",
+  "ОН": "w64.mp3",
+  "ОНА": "w65.mp3",
+  "МЫ": "w66.mp3",
+  "КАК ДЕЛА": "w67.mp3",
+  "ХОРОШО": "w68.mp3",
+  "ПЛОХО": "w69.mp3",
+  "НОРМАЛЬНО": "w70.mp3",
+  "ОТЛИЧНО": "w71.mp3",
+  "А ТЫ": "w72.mp3",
+  "ИЗВИНИТЕ": "w73.mp3",
+  "ВОТ ЧАЙ": "w74.mp3",
+  "МЕНЯ ЗОВУТ НИКА": "w75.mp3",
+  "А ОН КТО": "w76.mp3",
+  "ОН ДРУГ": "w77.mp3",
+  "ПРИВЕТ КАК ДЕЛА": "w78.mp3",
+  "ХОРОШО А ТЫ": "w79.mp3",
+  "АЙ": "w80.mp3",
+  "ПОКА ДРУГ": "w81.mp3",
 };

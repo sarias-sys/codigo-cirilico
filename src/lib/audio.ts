@@ -1,11 +1,11 @@
 import { VOICE } from "../content/voice";
-import { normalize } from "./text";
+import { voiceKey } from "./text";
 
 let clip: HTMLAudioElement | null = null;
 
 /** Ruta del audio grabado de una letra o palabra, o null si no hay. */
 export function clipUrl(text: string): string | null {
-  const file = VOICE[normalize(text)];
+  const file = VOICE[voiceKey(text)];
   return file ? `${import.meta.env.BASE_URL}voz/${file}` : null;
 }
 

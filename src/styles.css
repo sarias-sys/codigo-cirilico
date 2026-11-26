@@ -213,3 +213,12 @@ h2 { font-size: 1.55rem; line-height: 1.15; }
 .backup { display: grid; gap: 10px; }
 .code-box { width: 100%; min-height: 96px; resize: vertical; background: var(--ink); color: var(--fg, inherit); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-family: "JetBrains Mono", monospace; font-size: .75rem; word-break: break-all; }
 .nudge { display: block; width: 100%; text-align: left; background: rgba(242,210,122,.08); border: 1px dashed var(--brass); border-radius: 14px; padding: 10px 12px; color: inherit; font-size: .9rem; }
+
+/* Expediente 1: frases y conversación */
+.code.long { font-size: 1.45rem; letter-spacing: .06em; overflow-wrap: normal; }
+.phrase { background: none; border: none; font-family: var(--f-mono); font-weight: 700; font-size: 2rem; letter-spacing: .06em; line-height: 1.2; color: var(--fg); }
+.bubble.talk { display: grid; gap: 6px; justify-items: start; }
+.bubble.talk .says { font-family: var(--f-mono); font-weight: 700; font-size: 1.5rem; color: var(--fg); letter-spacing: .04em; }
+.opt.ru-opt { font-family: var(--f-mono); letter-spacing: .04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip { font-family: var(--f-mono); font-weight: 700; padding: 6px 12px; border-radius: 999px; background: linear-gradient(160deg, var(--ice), #c9601c); color: var(--ink); }

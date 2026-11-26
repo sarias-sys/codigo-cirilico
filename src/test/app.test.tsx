@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import App from "../App";
 import { STORAGE_KEY, completeMission, fresh } from "../lib/progress";
-import { MISSIONS } from "../content/missions";
+import { MISSIONS, wordByRu } from "../content/missions";
 import { addDays, dayOf } from "../lib/dates";
 
 describe("la app", () => {
@@ -84,5 +84,38 @@ describe("la app", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
     render(<App />);
     expect(screen.getByText(/Misión 0.4 · Letras raras/).closest("button")?.disabled).toBe(false);
+  });
+
+  it("al terminar el alfabeto se abre el Expediente 1 y su conversación usa el nombre en ruso", () => {
+    let p = { ...fresh(), name: "Ana" };
+    for (const m of MISSIONS.filter((x) => x.level === 0)) p = completeMission(p, m, dayOf());
+    p = completeMission(p, MISSIONS.find((m) => m.id === "1.1")!, dayOf());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    render(<App />);
+    expect(screen.getByText("Expediente 1 · Más allá del río")).toBeTruthy();
+    fireEvent.click(screen.getByText(/Misión 1.2/));
+    const m = MISSIONS.find((x) => x.id === "1.2")!;
+    for (let i = 1; i < m.intro.length; i++) fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "¡Vamos!" }));
+    expect(screen.getByText("Frase nueva")).toBeTruthy();
+    // Lección de frases: tarjeta y prueba rápida por cada frase.
+    for (const ru of m.learn!) {
+      fireEvent.click(screen.getByRole("button", { name: "Entendido" }));
+      fireEvent.click(screen.getByRole("button", { name: wordByRu(ru).es }));
+      fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    }
+    // Descifrar: se responde lo que muestre la pantalla.
+    for (let i = 0; i < m.read.length; i++) {
+      const shown = document.querySelector(".code")!.textContent!;
+      fireEvent.click(screen.getByRole("button", { name: wordByRu(shown).es }));
+      fireEvent.click(screen.getByRole("button", { name: i < m.read.length - 1 ? "Siguiente" : "Ahora, a conversar" }));
+    }
+    expect(screen.getByText("Conversación")).toBeTruthy();
+    expect(screen.getByText("КТО ТЫ?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Я Анна." }));
+    expect(screen.getByRole("status").textContent).toMatch(/¡Bien dicho!.*soy Анна/);
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    fireEvent.click(screen.getByRole("button", { name: "ДОБРОЕ УТРО!" }));
+    expect(screen.getByRole("status").textContent).toMatch(/Mejor: «МЕНЯ ЗОВУТ Анна\.»/);
   });
 });

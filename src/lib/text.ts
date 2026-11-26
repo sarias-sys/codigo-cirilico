@@ -3,6 +3,11 @@ export function normalize(s: string): string {
   return s.normalize("NFC").replace(/́/g, "").toUpperCase().replace(/\s+/g, " ").trim();
 }
 
+/** Clave de un audio grabado: como normalize, pero sin signos de puntuación («КАК ДЕЛА?» → «КАК ДЕЛА»). */
+export function voiceKey(s: string): string {
+  return normalize(s.replace(/[?!.,…«»]/g, " "));
+}
+
 /** Nombres en español que tienen una forma tradicional en ruso. */
 const NAME_FORMS: Record<string, string> = {
   alejandro: "Александр", ana: "Анна", andres: "Андрей", catalina: "Екатерина", daniel: "Даниил",

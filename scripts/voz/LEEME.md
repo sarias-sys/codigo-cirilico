@@ -7,4 +7,5 @@
    mp3 por palabra en `public/voz/`. Si no encuentra el número exacto de pausas, no corta nada.
 4. `src/content/voice.ts` dice qué archivo corresponde a cada letra o palabra. Una prueba revisa que no falte ninguno.
 
-Al agregar palabras nuevas: grabar solo las nuevas y sumarlas a `voice.ts`.
+Al agregar palabras o frases nuevas: grabar solo las que faltan y sumarlas a `voice.ts`. La clave va sin signos
+(«КАК ДЕЛА?» se guarda como «КАК ДЕЛА»); la prueba «voz grabada» dice cuáles faltan, también las de las conversaciones.
