@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import App from "../App";
 import { STORAGE_KEY, completeMission, fresh } from "../lib/progress";
 import { MISSIONS } from "../content/missions";
@@ -49,5 +49,40 @@ describe("la app", () => {
     expect(screen.getByText("Ronda perfecta")).toBeTruthy();
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.srs["W:КОТ"].box).toBe(3);
+  });
+
+  it("guarda una copia del progreso y la recupera en otro teléfono", () => {
+    const played = completeMission({ ...fresh(), name: "Ana" }, MISSIONS[0], dayOf());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(played));
+    render(<App />);
+    expect(screen.getByText(/Guarda una copia de tu progreso/)).toBeTruthy();
+    fireEvent.click(screen.getByText(/Guarda una copia de tu progreso/));
+    fireEvent.click(screen.getByRole("button", { name: "Guardar copia" }));
+    const code = (screen.getByLabelText(/Este código es tu copia/) as HTMLTextAreaElement).value;
+    expect(code.startsWith("CC1-")).toBe(true);
+    cleanup();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...fresh(), name: "Ana" }));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /Escuadrón/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Recuperar" }));
+    const box = screen.getByLabelText(/Pega aquí el código/);
+    fireEvent.change(box, { target: { value: "esto no sirve" } });
+    fireEvent.click(screen.getByRole("button", { name: "Revisar copia" }));
+    expect(screen.getByRole("alert").textContent).toMatch(/no es una copia/);
+    fireEvent.change(box, { target: { value: code } });
+    fireEvent.click(screen.getByRole("button", { name: "Revisar copia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sí, recuperar" }));
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(saved.xp).toBe(played.xp);
+    expect(saved.completed).toEqual(["0.1"]);
+  });
+
+  it("el nivel 0 tiene las cuatro misiones y se abren en orden", () => {
+    let p = { ...fresh(), name: "Ana" };
+    for (const m of MISSIONS.slice(0, 3)) p = completeMission(p, m, dayOf());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    render(<App />);
+    expect(screen.getByText(/Misión 0.4 · Letras raras/).closest("button")?.disabled).toBe(false);
   });
 });

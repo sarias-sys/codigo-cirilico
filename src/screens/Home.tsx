@@ -4,6 +4,7 @@ import { MISSIONS, UPCOMING } from "../content/missions";
 import { ruName } from "../lib/text";
 import { rank } from "../lib/progress";
 import { isDue } from "../lib/srs";
+import { addDays } from "../lib/dates";
 import { Stats, TabBar } from "../ui";
 
 export function Start() {
@@ -50,6 +51,11 @@ export function MapScreen() {
             <span><b>Patrulla nocturna</b><small>{due} {due === 1 ? "carta necesita" : "cartas necesitan"} repaso hoy. Si no las repasas, se apagan.</small></span>
           </button>
         ) : null}
+        {p.completed.length > 0 && (!p.backupAt || p.backupAt < addDays(today, -7)) ? (
+          <button className="nudge" onClick={() => go({ name: "squad" })}>
+            💾 <b>Guarda una copia de tu progreso</b> para no perderlo si cambias de celular. Toma 10 segundos.
+          </button>
+        ) : null}
         <div className="section-t">Nivel 0 · El alfabeto</div>
         <div className="missions">
           {MISSIONS.map((m, i) => {
@@ -64,10 +70,9 @@ export function MapScreen() {
               </button>
             );
           })}
-          {UPCOMING.slice(0, 2).map((m) => <Locked key={m.id} {...m} />)}
         </div>
         <div className="section-t">Nivel 1 · Primeras misiones</div>
-        <div className="missions">{UPCOMING.slice(2).map((m) => <Locked key={m.id} {...m} />)}</div>
+        <div className="missions">{UPCOMING.map((m) => <Locked key={m.id} {...m} />)}</div>
       </section>
       <TabBar current="map" />
     </>

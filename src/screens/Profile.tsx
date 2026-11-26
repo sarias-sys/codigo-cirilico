@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useGame } from "../game";
 import { ALPHABET, LETTERS } from "../content/letters";
 import { MISSIONS, WORDS } from "../content/missions";
-import { fresh, rank, visibleStreak } from "../lib/progress";
+import { fresh, rank, visibleStreak, type Progress } from "../lib/progress";
+import { BackupError, exportCode, importCode } from "../lib/backup";
 import { isDue, letterKey, mastery, wordKey } from "../lib/srs";
 import { ruName } from "../lib/text";
 import { TabBar, TopBar } from "../ui";
@@ -58,6 +59,8 @@ export function Squad() {
 
         <button className="btn ghost" onClick={() => go({ name: "report" })}>Informe para papá o mamá</button>
 
+        <Backup />
+
         <div className="section-t">Ajustes</div>
         <div className="settings">
           <label className="toggle"><input type="checkbox" id="sound" checked={p.sound} onChange={(e) => update((x) => ({ ...x, sound: e.target.checked }))} /> Sonidos y vibración</label>
@@ -78,6 +81,88 @@ export function Squad() {
       </section>
       <TabBar current="squad" />
     </>
+  );
+}
+
+/** Guardar y recuperar el progreso con un código, sin servidor ni cuentas. */
+function Backup() {
+  const { p, update, toast, today } = useGame();
+  const [mode, setMode] = useState<"none" | "save" | "restore">("none");
+  const [code, setCode] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState<Progress | null>(null);
+  const saved = () => update((x) => ({ ...x, backupAt: today }));
+  const open = (m: typeof mode) => { setMode(m); setError(""); setPending(null); setPasted(""); if (m === "save") setCode(exportCode(p)); };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      saved();
+      toast("Copia guardada en el portapapeles. Pégala en un lugar seguro, por ejemplo en un chat contigo mismo.");
+    } catch {
+      toast("No se pudo copiar sola. Mantén el dedo sobre el código, selecciónalo todo y cópialo a mano.");
+    }
+  };
+  const share = async () => {
+    try {
+      await navigator.share({ title: "Copia de Código Cirílico", text: code });
+      saved();
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") toast("No se pudo compartir. Usa el botón Copiar.");
+    }
+  };
+  const check = () => {
+    try { setPending(importCode(pasted)); setError(""); }
+    catch (e) { setPending(null); setError(e instanceof BackupError ? e.message : "No se pudo leer la copia."); }
+  };
+
+  return (
+    <div className="backup">
+      <div className="section-t">Copia de seguridad</div>
+      <p className="sub">
+        Tu progreso vive solo en este teléfono. Si borras los datos del navegador o cambias de celular, lo recuperas con una copia.{" "}
+        {p.backupAt ? `Última copia: ${p.backupAt}.` : "Todavía no has guardado ninguna."}
+      </p>
+      {mode === "none" ? (
+        <div className="row2">
+          <button className="btn ghost" onClick={() => open("restore")}>Recuperar</button>
+          <button className="btn" onClick={() => open("save")}>Guardar copia</button>
+        </div>
+      ) : null}
+      {mode === "save" ? (
+        <>
+          <label htmlFor="backup-out" className="sub">Este código es tu copia. Incluye tu nombre: guárdalo solo para ti.</label>
+          <textarea id="backup-out" className="code-box" readOnly value={code} onFocus={(e) => e.currentTarget.select()} />
+          <div className="row2">
+            {"share" in navigator ? <button className="btn ghost" onClick={share}>Compartir</button> : <button className="btn ghost" onClick={() => setMode("none")}>Cerrar</button>}
+            <button className="btn" onClick={copy}>Copiar</button>
+          </div>
+          {"share" in navigator ? <button className="link" onClick={() => setMode("none")}>Cerrar</button> : null}
+        </>
+      ) : null}
+      {mode === "restore" ? (
+        <>
+          <label htmlFor="backup-in" className="sub">Pega aquí el código de tu copia (empieza por CC1-).</label>
+          <textarea id="backup-in" className="code-box" value={pasted} onChange={(e) => { setPasted(e.target.value); setPending(null); setError(""); }} />
+          {error ? <div className="danger" role="alert">{error}</div> : null}
+          {pending ? (
+            <div className="danger">
+              <b>¿Reemplazar el progreso de este teléfono?</b> Ahora tienes {p.xp} XP y {p.completed.length} misiones. La copia de {pending.name || "un cadete"} tiene {pending.xp} XP y {pending.completed.length} misiones.
+              <div className="row2">
+                <button className="btn ghost" onClick={() => setPending(null)}>Cancelar</button>
+                <button className="btn" onClick={() => { update(() => pending); setMode("none"); toast(`Progreso recuperado. Bienvenido de vuelta, ${pending.name || "cadete"}.`); }}>Sí, recuperar</button>
+              </div>
+            </div>
+          ) : (
+            <div className="row2">
+              <button className="btn ghost" onClick={() => setMode("none")}>Cancelar</button>
+              <button className="btn" disabled={!pasted.trim()} onClick={check}>Revisar copia</button>
+            </div>
+          )}
+        </>
+      ) : null}
+    </div>
   );
 }
 

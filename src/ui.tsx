@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useGame } from "./game";
-import { LETTERS } from "./content/letters";
+import { ALPHABET, LETTERS } from "./content/letters";
 import { ruName } from "./lib/text";
 import { visibleStreak } from "./lib/progress";
 import { isDue } from "./lib/srs";
@@ -80,10 +80,13 @@ export function Slots({ text, state }: { text: string; state?: "ok" | "bad" }) {
   );
 }
 
+/** Teclado cirílico en pantalla, en el orden del alfabeto para que también lo memorice. */
 export function Keyboard({ keys, onKey, onDel }: { keys: string[]; onKey: (k: string) => void; onDel: () => void }) {
+  const sorted = [...keys].sort((a, b) => ALPHABET.indexOf(a) - ALPHABET.indexOf(b));
+  const cols = keys.length > 24 ? 7 : keys.length > 12 ? 6 : keys.length > 8 ? 5 : 4;
   return (
-    <div className="kbd" style={{ gridTemplateColumns: `repeat(${keys.length > 8 ? 5 : 4}, 1fr)` }}>
-      {keys.map((k) => <button key={k} className="key" onClick={() => onKey(k)} aria-label={`Letra ${k}`}>{k}</button>)}
+    <div className={`kbd ${keys.length > 12 ? "dense" : ""}`} style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+      {sorted.map((k) => <button key={k} className="key" onClick={() => onKey(k)} aria-label={`Letra ${k}`}>{k}</button>)}
       <button className="key wide" onClick={onDel}>⌫ Borrar</button>
     </div>
   );

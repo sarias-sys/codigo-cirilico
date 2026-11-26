@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useGame } from "../game";
-import { ALPHABET, LETTERS } from "../content/letters";
+import { ALPHABET, LETTERS, describeLetter } from "../content/letters";
 import { MISSIONS, WORDS, wordByRu } from "../content/missions";
 import { finishReview, reviewItem } from "../lib/progress";
 import { isDue } from "../lib/srs";
@@ -27,7 +27,8 @@ export default function Review() {
     return shuffle(due.map(([key, item]): Card => {
       const v = key.slice(2);
       if (key.startsWith("L:")) return { key, kind: "letter", ch: v, opts: options(LETTERS[v].sound, sounds, 3) };
-      if (item.box >= 2) return { key, kind: "write", ru: v };
+      // Las frases con espacio se repasan por su significado: el teclado no tiene espacio.
+      if (item.box >= 2 && !v.includes(" ")) return { key, kind: "write", ru: v };
       return { key, kind: "meaning", ru: v, opts: options(wordByRu(v).es, meanings, 3) };
     }));
     // La cola se arma una sola vez al entrar; si dependiera de p, cambiaría con cada respuesta.
@@ -102,7 +103,7 @@ function ReviewCard({ card, step, total, onAnswered, onNext }: { card: Card; ste
   let solution = "";
   if (card.kind === "letter") {
     const L = LETTERS[card.ch];
-    solution = `${L.ch} suena «${L.sound}».`;
+    solution = `${describeLetter(L)}.`;
     body = (
       <>
         <h2>¿Cómo suena esta letra?</h2>

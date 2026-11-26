@@ -15,6 +15,8 @@ export type Progress = {
   srs: Record<string, SrsItem>;
   stats: { answers: number; correct: number; sessions: number };
   sound: boolean;
+  /** Día de la última copia de seguridad que el jugador guardó. */
+  backupAt: string | null;
 };
 
 export const STORAGE_KEY = "codigo-cirilico:v1";
@@ -22,7 +24,7 @@ export const STORAGE_KEY = "codigo-cirilico:v1";
 export function fresh(): Progress {
   return {
     version: 1, name: "", xp: 0, streak: { count: 0, last: null }, completed: [], srs: {},
-    stats: { answers: 0, correct: 0, sessions: 0 }, sound: true,
+    stats: { answers: 0, correct: 0, sessions: 0 }, sound: true, backupAt: null,
   };
 }
 
@@ -36,13 +38,27 @@ export function load(store: StorageLike | null = storage()): Progress {
   try {
     const raw = store?.getItem(STORAGE_KEY);
     if (!raw) return fresh();
-    const data = JSON.parse(raw);
-    if (data?.version !== 1) return fresh();
-    const base = fresh();
-    return { ...base, ...data, streak: { ...base.streak, ...data.streak }, stats: { ...base.stats, ...data.stats } };
+    return fromData(JSON.parse(raw)) ?? fresh();
   } catch {
     return fresh();
   }
+}
+
+const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
+
+/** Revisa que unos datos tengan forma de progreso; si no, devuelve null. */
+export function fromData(data: unknown): Progress | null {
+  if (!isObj(data) || data.version !== 1) return null;
+  if (typeof data.name !== "string" || typeof data.xp !== "number") return null;
+  if (!Array.isArray(data.completed) || !data.completed.every((c) => typeof c === "string")) return null;
+  if (!isObj(data.srs)) return null;
+  for (const item of Object.values(data.srs)) {
+    if (!isObj(item) || typeof item.box !== "number" || typeof item.due !== "string") return null;
+  }
+  const base = fresh();
+  const streak = isObj(data.streak) ? data.streak : {};
+  const stats = isObj(data.stats) ? data.stats : {};
+  return { ...base, ...data, streak: { ...base.streak, ...streak }, stats: { ...base.stats, ...stats } } as Progress;
 }
 
 /** Devuelve false si el teléfono no deja guardar (modo privado, almacenamiento lleno). */
