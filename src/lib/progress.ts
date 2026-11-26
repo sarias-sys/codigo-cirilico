@@ -17,6 +17,8 @@ export type Progress = {
   sound: boolean;
   /** Día de la última copia de seguridad que el jugador guardó. */
   backupAt: string | null;
+  /** Micrófono: null = aún no lo ha decidido; "on" = aceptó el aviso; "off" = prefiere no hablar. */
+  mic: "on" | "off" | null;
 };
 
 export const STORAGE_KEY = "codigo-cirilico:v1";
@@ -24,7 +26,7 @@ export const STORAGE_KEY = "codigo-cirilico:v1";
 export function fresh(): Progress {
   return {
     version: 1, name: "", xp: 0, streak: { count: 0, last: null }, completed: [], srs: {},
-    stats: { answers: 0, correct: 0, sessions: 0 }, sound: true, backupAt: null,
+    stats: { answers: 0, correct: 0, sessions: 0 }, sound: true, backupAt: null, mic: null,
   };
 }
 
@@ -58,7 +60,8 @@ export function fromData(data: unknown): Progress | null {
   const base = fresh();
   const streak = isObj(data.streak) ? data.streak : {};
   const stats = isObj(data.stats) ? data.stats : {};
-  return { ...base, ...data, streak: { ...base.streak, ...streak }, stats: { ...base.stats, ...stats } } as Progress;
+  const mic = data.mic === "on" || data.mic === "off" ? data.mic : null;
+  return { ...base, ...data, mic, streak: { ...base.streak, ...streak }, stats: { ...base.stats, ...stats } } as Progress;
 }
 
 /** Devuelve false si el teléfono no deja guardar (modo privado, almacenamiento lleno). */

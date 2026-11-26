@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import App from "../App";
 import { STORAGE_KEY, completeMission, fresh } from "../lib/progress";
@@ -117,5 +117,84 @@ describe("la app", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     fireEvent.click(screen.getByRole("button", { name: "ДОБРОЕ УТРО!" }));
     expect(screen.getByRole("status").textContent).toMatch(/Mejor: «МЕНЯ ЗОВУТ Анна\.»/);
+  });
+
+  describe("hablar al micrófono", () => {
+    const heard: string[][] = [];
+    class FakeRec {
+      onresult: ((e: unknown) => void) | null = null;
+      onerror: ((e: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      lang = ""; interimResults = false; maxAlternatives = 1; continuous = false;
+      start() {
+        const alts = heard.shift();
+        if (alts) this.onresult?.({ results: [alts.map((transcript) => ({ transcript }))] });
+        else this.onerror?.({ error: "not-allowed" });
+      }
+      abort() {}
+    }
+    afterEach(() => { delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition; });
+
+    const playTo13Speak = () => {
+      let p = { ...fresh(), name: "Ana" };
+      for (const m of MISSIONS.filter((x) => x.id !== "1.3")) p = completeMission(p, m, dayOf());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+      render(<App />);
+      fireEvent.click(screen.getByText(/Misión 1.3/));
+      const m = MISSIONS.find((x) => x.id === "1.3")!;
+      for (let i = 1; i < m.intro.length; i++) fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      fireEvent.click(screen.getByRole("button", { name: "¡Vamos!" }));
+      for (const ru of m.learn!) {
+        fireEvent.click(screen.getByRole("button", { name: "Entendido" }));
+        fireEvent.click(screen.getByRole("button", { name: wordByRu(ru).es }));
+        fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+      }
+      for (let i = 0; i < m.read.length; i++) {
+        fireEvent.click(screen.getByRole("button", { name: wordByRu(document.querySelector(".code")!.textContent!).es }));
+        fireEvent.click(screen.getByRole("button", { name: i < m.read.length - 1 ? "Siguiente" : "Ahora, a conversar" }));
+      }
+      m.talk!.forEach((t, i) => {
+        fireEvent.click(screen.getByRole("button", { name: t.answer }));
+        fireEvent.click(screen.getByRole("button", { name: i < m.talk!.length - 1 ? "Siguiente" : "Ahora, a hablar" }));
+      });
+      return m;
+    };
+
+    it("pide permiso con el aviso de privacidad y califica lo que dijo", () => {
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition = FakeRec;
+      const m = playTo13Speak();
+      expect(screen.getByText(/envía tu voz a Google/)).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Activar micrófono" }));
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).mic).toBe("on");
+      expect(screen.getByText(m.speak![0])).toBeTruthy();
+      heard.push(["как тебя"]);
+      fireEvent.click(screen.getByRole("button", { name: "Toca y habla" }));
+      expect(screen.getByRole("status").textContent).toMatch(/Escuché «как тебя»/);
+      heard.push(["Как дела"]);
+      fireEvent.click(screen.getByRole("button", { name: "Toca y habla" }));
+      expect(screen.getByRole("status").textContent).toMatch(/¡Te entendí!/);
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      // Micrófono bloqueado: lo dice y deja seguir.
+      fireEvent.click(screen.getByRole("button", { name: "Toca y habla" }));
+      expect(screen.getByRole("status").textContent).toMatch(/bloqueado/);
+      fireEvent.click(screen.getByRole("button", { name: "No puedo hablar ahora" }));
+      fireEvent.click(screen.getByRole("button", { name: "No puedo hablar ahora" }));
+      expect(screen.getByText("Escribe en ruso")).toBeTruthy();
+    });
+
+    it("si prefiere no hablar, salta al escribir y no lo vuelve a preguntar", () => {
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition = FakeRec;
+      playTo13Speak();
+      fireEvent.click(screen.getByRole("button", { name: "Prefiero no hablar" }));
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).mic).toBe("off");
+      expect(screen.getByText("Escribe en ruso")).toBeTruthy();
+    });
+
+    it("si el navegador no puede escuchar, lo avisa y deja seguir", () => {
+      playTo13Speak();
+      expect(screen.getByRole("alert").textContent).toMatch(/no puede escucharte/);
+      fireEvent.click(screen.getByRole("button", { name: "Ahora, a escribir" }));
+      expect(screen.getByText("Escribe en ruso")).toBeTruthy();
+    });
   });
 });
