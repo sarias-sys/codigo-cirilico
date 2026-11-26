@@ -64,6 +64,8 @@ export function Squad() {
         <div className="section-t">Ajustes</div>
         <div className="settings">
           <label className="toggle"><input type="checkbox" id="sound" checked={p.sound} onChange={(e) => update((x) => ({ ...x, sound: e.target.checked }))} /> Sonidos y vibración</label>
+          <label className="toggle"><input type="checkbox" id="mic" checked={p.mic === "on"} onChange={(e) => update((x) => ({ ...x, mic: e.target.checked ? "on" : "off" }))} /> Hablar al micrófono</label>
+          <p className="sub small">Para entenderte, el navegador envía tu voz a Google (Chrome) o Apple (Safari). La app no graba ni guarda tu voz.</p>
           {editing ? (
             <form className="namefield" onSubmit={(e) => { e.preventDefault(); const n = name.trim(); if (n) { update((x) => ({ ...x, name: n })); setEditing(false); } }}>
               <label htmlFor="rename">Nombre del cadete</label>

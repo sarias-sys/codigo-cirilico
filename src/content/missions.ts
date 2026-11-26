@@ -25,6 +25,8 @@ export type Mission = {
   learn?: string[];
   intro: Line[];
   read: string[];
+  /** Palabras o frases que el jugador dice en voz alta al micrófono. */
+  speak?: string[];
   write: { ru: string; listen?: boolean }[];
   talk?: Talk[];
   boss: { name: string; ru: string; tagline: string; readPrompt: string; writePrompt: string; lose: string };
@@ -137,6 +139,7 @@ export const MISSIONS: Mission[] = [
       { who: "Сова", text: "Aprende las letras, {N}. Descifra el mensaje y defiende la puerta norte. Su líder, <ru>Тень</ru>, vendrá en persona." },
     ],
     read: ["КОТ", "МАМА", "АТОМ", "ТОМАТ", "КОМЕТА"],
+    speak: ["КОТ", "МАМА", "ТОМАТ"],
     write: [{ ru: "КОТ" }, { ru: "ТАК" }, { ru: "МАМА" }, { ru: "ТЕМА", listen: true }, { ru: "ТОМАТ", listen: true }],
     boss: {
       name: "Тень", ru: "Ten', la Sombra", tagline: "Líder de las Sombras",
@@ -161,6 +164,7 @@ export const MISSIONS: Mission[] = [
       { who: "Сова", text: "Apréndelas y atrapa al ladrón antes de que la radio cruce el río." },
     ],
     read: ["НОС", "РУКА", "СОК", "МУХА", "ТЕАТР", "МЕТРО"],
+    speak: ["НОС", "РУКА", "МЕТРО"],
     write: [{ ru: "НЕТ" }, { ru: "СОК" }, { ru: "ВОР" }, { ru: "РУКА", listen: true }, { ru: "КОСМОС", listen: true }],
     boss: {
       name: "Вор", ru: "Vor, el Ladrón", tagline: "Espía de las Sombras",
@@ -185,6 +189,7 @@ export const MISSIONS: Mission[] = [
       { who: "Сова", text: "Son diez letras. Apréndelas y cruza el puente con Лев. De paso aprenderás a saludar como un ruso: <ru>ПРИВЕТ</ru>." },
     ],
     read: ["ДОМ", "ПАПА", "ВОДА", "ГОРОД", "МОСТ", "ПРИВЕТ"],
+    speak: ["ДОМ", "ВОДА", "ПРИВЕТ"],
     write: [{ ru: "ДА" }, { ru: "ДРУГ" }, { ru: "ВРАГ" }, { ru: "ЗИМА", listen: true }, { ru: "БАНАН", listen: true }],
     boss: {
       name: "Страж", ru: "Strazh, el Guardián", tagline: "Guardián del puente",
@@ -209,6 +214,7 @@ export const MISSIONS: Mission[] = [
       { who: "Сова", text: "Son once letras, cadete: las más difíciles. Cuando las domines conocerás las 33 y podrás presentarte en ruso: <ru>Меня зовут {R}</ru>." },
     ],
     read: ["ЧАЙ", "ШКОЛА", "СЫР", "ЭТО", "ЦАРЬ", "МЕНЯ ЗОВУТ"],
+    speak: ["ЧАЙ", "ШКОЛА", "МЕНЯ ЗОВУТ"],
     write: [{ ru: "Я" }, { ru: "ЩИТ" }, { ru: "ЮГ" }, { ru: "ДЕНЬ", listen: true }, { ru: "ТИШИНА", listen: true }],
     boss: {
       name: "Царь", ru: "Tsar', el Rey de las Sombras", tagline: "Rey de las Sombras",
@@ -234,6 +240,7 @@ export const MISSIONS: Mission[] = [
       { who: "Лев", text: "En ruso hay dos «hola»: <ru>ПРИВЕТ</ru> para amigos y <ru>ЗДРАВСТВУЙТЕ</ru> para adultos y desconocidos. Hoy aprenderás a saludar, a dar las gracias y a despedirte." },
     ],
     read: ["ПРИВЕТ", "ПОКА", "СПАСИБО", "ДОБРОЕ УТРО", "ДО СВИДАНИЯ", "ПОЖАЛУЙСТА"],
+    speak: ["ЗДРАВСТВУЙТЕ", "СПАСИБО", "ДО СВИДАНИЯ"],
     talk: [
       { who: "Вера", ctx: "Una anciana abre la puerta del refugio. Es una adulta que no conoces.", says: "ЗДРАВСТВУЙТЕ.", tr: "zdrástvuitie", es: "hola",
         answer: "ЗДРАВСТВУЙТЕ!", wrong: ["ПРИВЕТ!", "ПОКА!"], why: "Con adultos y desconocidos se dice ЗДРАВСТВУЙТЕ. ПРИВЕТ es para amigos." },
@@ -269,6 +276,7 @@ export const MISSIONS: Mission[] = [
       { who: "Ника", text: "Si eres humano, dime cómo te llamas. En ruso: <ru>Как тебя зовут?</ru>" },
     ],
     read: ["КТО ТЫ?", "ТЫ", "ОНА", "МЫ", "ОЧЕНЬ ПРИЯТНО", "КАК ТЕБЯ ЗОВУТ?"],
+    speak: ["КТО ТЫ?", "ОЧЕНЬ ПРИЯТНО", "КАК ТЕБЯ ЗОВУТ?"],
     talk: [
       { who: "Ника", ctx: "Ника te apunta con la linterna.", says: "КТО ТЫ?", tr: "kto ty?", es: "¿quién eres?",
         answer: "Я {R}.", wrong: ["Я ВРАГ.", "ПОКА!"], why: "Te preguntó «¿quién eres?». «Я {R}» significa «soy {R}». ¡En ruso no hace falta decir «soy»!" },
@@ -304,6 +312,7 @@ export const MISSIONS: Mission[] = [
       { who: "Сова", text: "Aprende a decir cómo estás y a pedir perdón. Y prepárate: esta noche Тень vendrá al refugio." },
     ],
     read: ["КАК ДЕЛА?", "ХОРОШО", "ПЛОХО", "ОТЛИЧНО", "А ТЫ?", "ИЗВИНИТЕ"],
+    speak: ["КАК ДЕЛА?", "ХОРОШО", "ОТЛИЧНО"],
     talk: [
       { who: "Вера", ctx: "Llegas al refugio sano y salvo. Estás feliz.", says: "КАК ДЕЛА?", tr: "kak dielá?", es: "¿cómo estás?",
         answer: "ОТЛИЧНО!", wrong: ["ПЛОХО.", "ИЗВИНИТЕ!"], why: "Estás feliz: ОТЛИЧНО, «excelente». ПЛОХО sería «mal»." },

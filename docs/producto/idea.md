@@ -11,7 +11,7 @@
 4. Historia por capítulos con jefes finales y archivos secretos.
 5. Informe para los papás.
 
-**Qué NO hace (todavía):** cuentas de usuario, servidor, chat con inteligencia artificial, audio grabado por voces nativas, reconocimiento de voz.
+**Qué NO hace (todavía):** cuentas de usuario, servidor, chat con inteligencia artificial, modelo propio de reconocimiento de voz (se usa el del navegador, con aviso).
 
 **Cómo se cobra:** no se cobra; es un proyecto personal.
 

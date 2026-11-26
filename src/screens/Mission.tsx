@@ -4,31 +4,42 @@ import { LETTERS, describeLetter } from "../content/letters";
 import { MISSIONS, fillName, lettersThrough, wordByRu, wordsThrough, type Mission as M, type Talk as T } from "../content/missions";
 import { completeMission, recordAnswer } from "../lib/progress";
 import { normalize, ruName } from "../lib/text";
+import { LISTEN_ERRORS, canListen, judge, listen, type ListenError } from "../lib/speech";
 import { options, shuffle } from "../lib/random";
 import { Crest, EnemyFace, Keyboard, Rich, Shield, Slots, TopBar, codeClass, useTyping } from "../ui";
 
-type Phase = "intro" | "lesson" | "read" | "talk" | "write" | "boss" | "reward";
+type Phase = "intro" | "lesson" | "read" | "talk" | "speak" | "write" | "boss" | "reward";
+const ORDER: Phase[] = ["intro", "lesson", "read", "talk", "speak", "write", "boss", "reward"];
+const NEXT_LABEL: Partial<Record<Phase, string>> = { talk: "Ahora, a conversar", speak: "Ahora, a hablar", write: "Ahora, a escribir" };
+
+/** La fase que sigue, saltando las que la misión no tiene (o Hablar, si el jugador apagó el micrófono). */
+function nextPhase(m: M, ph: Phase, micOff: boolean): Phase {
+  let i = ORDER.indexOf(ph) + 1;
+  while ((ORDER[i] === "talk" && !m.talk?.length) || (ORDER[i] === "speak" && (!m.speak?.length || micOff))) i++;
+  return ORDER[i];
+}
 
 export default function Mission({ id }: { id: string }) {
-  const { go, update, today, play } = useGame();
+  const { go, update, today, play, p } = useGame();
   const mission = MISSIONS.find((m) => m.id === id);
   const [phase, setPhase] = useState<Phase>("intro");
   if (!mission) return <section className="screen"><p>No encontramos esa misión.</p><button className="btn" onClick={() => go({ name: "map" })}>Volver al mapa</button></section>;
   const exit = () => go({ name: "map" });
+  const next = nextPhase(mission, phase, p.mic === "off");
+  const props = { mission, onExit: exit, onDone: () => setPhase(next), nextLabel: NEXT_LABEL[next] ?? "Continuar" };
   switch (phase) {
-    case "intro": return <Story mission={mission} onExit={exit} onDone={() => setPhase("lesson")} />;
-    case "lesson": return mission.letters.length
-      ? <Lesson mission={mission} onExit={exit} onDone={() => setPhase("read")} />
-      : <Phrases mission={mission} onExit={exit} onDone={() => setPhase("read")} />;
-    case "read": return <Read mission={mission} onExit={exit} onDone={() => setPhase(mission.talk?.length ? "talk" : "write")} />;
-    case "talk": return <Talk mission={mission} onExit={exit} onDone={() => setPhase("write")} />;
-    case "write": return <Write mission={mission} onExit={exit} onDone={() => setPhase("boss")} />;
-    case "boss": return <Boss mission={mission} onExit={exit} onWin={() => { play("win"); update((p) => completeMission(p, mission, today)); setPhase("reward"); }} />;
+    case "intro": return <Story {...props} />;
+    case "lesson": return mission.letters.length ? <Lesson {...props} /> : <Phrases {...props} />;
+    case "read": return <Read {...props} />;
+    case "talk": return <Talk {...props} />;
+    case "speak": return <Speak {...props} />;
+    case "write": return <Write {...props} />;
+    case "boss": return <Boss mission={mission} onExit={exit} onWin={() => { play("win"); update((x) => completeMission(x, mission, today)); setPhase("reward"); }} />;
     case "reward": return <Reward mission={mission} />;
   }
 }
 
-type Step = { mission: M; onExit: () => void; onDone: () => void };
+type Step = { mission: M; onExit: () => void; onDone: () => void; nextLabel?: string };
 
 function Story({ mission, onExit, onDone }: Step) {
   const [i, setI] = useState(0);
@@ -188,7 +199,7 @@ function Phrases({ mission, onExit, onDone }: Step) {
 }
 
 /** Conversación: un personaje habla y el jugador elige qué responderle en ruso. */
-function Talk({ mission, onExit, onDone }: Step) {
+function Talk({ mission, onExit, onDone, nextLabel }: Step) {
   const { speak, play, update, p } = useGame();
   const ru = ruName(p.name);
   const items = useMemo(() => (mission.talk ?? []).map((t) => ({ t, opts: shuffle([t.answer, ...t.wrong]) })), [mission]);
@@ -223,13 +234,93 @@ function Talk({ mission, onExit, onDone }: Step) {
       </div>
       <div className="spacer" />
       <button className="btn" disabled={!done} onClick={() => { setPicked(null); if (i < items.length - 1) setI(i + 1); else onDone(); }}>
-        {i < items.length - 1 ? "Siguiente" : "Ahora, a escribir"}
+        {i < items.length - 1 ? "Siguiente" : nextLabel}
       </button>
     </section>
   );
 }
 
-function Read({ mission, onExit, onDone }: Step) {
+/** Hablar: el jugador dice la palabra al micrófono y el navegador la convierte en texto para compararla. */
+function Speak({ mission, onExit, onDone, nextLabel }: Step) {
+  const { speak, play, update, p } = useGame();
+  const items = useMemo(() => (mission.speak ?? []).map(wordByRu), [mission]);
+  const [i, setI] = useState(0);
+  const [tries, setTries] = useState(0);
+  const [state, setState] = useState<{ kind: "idle" | "listening" } | { kind: "ok" | "bad"; heard: string } | { kind: "error"; error: ListenError }>({ kind: "idle" });
+  const stop = useRef<() => void>(() => {});
+  useEffect(() => () => stop.current(), []);
+  const supported = canListen();
+  const turnOff = () => { update((x) => ({ ...x, mic: "off" })); onDone(); };
+
+  if (!supported || p.mic === null) {
+    return (
+      <section className="screen">
+        <TopBar onClose={onExit} />
+        <div className="label">Ahora, en voz alta</div>
+        <h2>Habla con el escuadrón</h2>
+        {supported ? (
+          <>
+            <p className="sub">Vas a decir palabras en ruso al micrófono y la app te dirá si te entendió.</p>
+            <div className="notice">
+              <b>Antes de empezar:</b> para entenderte, el navegador envía tu voz a Google (en Chrome) o a Apple (en Safari) y solo nos devuelve el texto. Código Cirílico no graba ni guarda tu voz.
+              <br />Si eres menor de edad, pídele permiso a papá o mamá. Puedes cambiarlo cuando quieras en Escuadrón › Ajustes.
+            </div>
+            <div className="spacer" />
+            <button className="btn" onClick={() => update((x) => ({ ...x, mic: "on" }))}>Activar micrófono</button>
+            <button className="btn ghost" onClick={turnOff}>Prefiero no hablar</button>
+          </>
+        ) : (
+          <>
+            <div className="feedback bad" role="alert">{LISTEN_ERRORS.unsupported}</div>
+            <div className="spacer" />
+            <button className="btn" onClick={onDone}>{nextLabel}</button>
+          </>
+        )}
+      </section>
+    );
+  }
+
+  const w = items[i];
+  const resolved = state.kind === "ok" || tries >= 3;
+  const nextItem = () => { stop.current(); setTries(0); setState({ kind: "idle" }); if (i < items.length - 1) setI(i + 1); else onDone(); };
+  const start = () => {
+    stop.current();
+    setState({ kind: "listening" });
+    stop.current = listen((alts) => {
+      const j = judge(w.ru, alts);
+      const n = tries + 1;
+      setTries(j.ok ? tries : n);
+      setState({ kind: j.ok ? "ok" : "bad", heard: j.heard });
+      play(j.ok ? "ok" : "bad");
+      if (j.ok || n >= 3) update((x) => recordAnswer(x, j.ok));
+    }, (error) => setState({ kind: "error", error }));
+  };
+  return (
+    <section className="screen">
+      <TopBar onClose={onExit} step={i + (resolved ? 1 : 0)} total={items.length} />
+      <div className="label">Dilo en voz alta</div>
+      <div className={codeClass(w.ru)} lang="ru">{w.ru}</div>
+      <p className="sub center">se dice «{w.tr}» · {w.es}</p>
+      <button className="audio center-self" onClick={() => speak(w.ru)}>▶ Escuchar a Viktoriya</button>
+      <button className={`mic ${state.kind === "listening" ? "on" : ""}`} disabled={state.kind === "listening" || state.kind === "ok"} onClick={start}
+        aria-label={state.kind === "listening" ? "Escuchando" : "Toca y habla"}>
+        <span aria-hidden="true">🎤</span>{state.kind === "listening" ? "Escuchando…" : "Toca y habla"}
+      </button>
+      <div className={`feedback ${state.kind === "ok" ? "ok" : state.kind === "bad" || state.kind === "error" ? "bad" : ""}`} role="status">
+        {state.kind === "ok" ? `¡Te entendí! Dijiste «${state.heard}».` : ""}
+        {state.kind === "bad" ? `Escuché «${state.heard}». ${tries >= 3 ? `Se dice «${w.tr}». Sigue practicando: ya saldrá.` : "Escucha a Viktoriya y vuelve a intentarlo."}` : ""}
+        {state.kind === "error" ? LISTEN_ERRORS[state.error] : ""}
+      </div>
+      {state.kind === "error" && state.error === "blocked" ? <button className="link" onClick={turnOff}>Apagar el micrófono y seguir</button> : null}
+      <div className="spacer" />
+      {resolved
+        ? <button className="btn" onClick={nextItem}>{i < items.length - 1 ? "Siguiente" : nextLabel}</button>
+        : <button className="btn ghost" onClick={nextItem}>No puedo hablar ahora</button>}
+    </section>
+  );
+}
+
+function Read({ mission, onExit, onDone, nextLabel }: Step) {
   const { speak, play, update } = useGame();
   const items = useMemo(() => {
     const pool = wordsThrough(mission.id).map((w) => w.es);
@@ -258,7 +349,7 @@ function Read({ mission, onExit, onDone }: Step) {
       </div>
       <div className="spacer" />
       <button className="btn" disabled={!done} onClick={() => { setPicked(null); if (i < items.length - 1) setI(i + 1); else onDone(); }}>
-        {i < items.length - 1 ? "Siguiente" : mission.talk?.length ? "Ahora, a conversar" : "Ahora, a escribir"}
+        {i < items.length - 1 ? "Siguiente" : nextLabel}
       </button>
     </section>
   );
