@@ -40,6 +40,7 @@ export function Squad() {
   const { p, go, update } = useGame();
   const ru = ruName(p.name);
   const levDone = p.completed.includes("0.2");
+  const miraDone = p.completed.includes("1.3");
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(p.name);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -53,7 +54,7 @@ export function Squad() {
           <Member face={ru[0]} name={`${p.name} · ${ru}`} text={`Tú. ${rank(p.xp).name} del escuadrón. Las Sombras ya saben tu nombre.`} />
           <Member face="С" name="Сова · Sova" text="Capitana. Te enseña el alfabeto y las órdenes del escuadrón." />
           <Member face="Л" name="Лев · Lev" locked={!levDone} text={levDone ? "Explorador. Llegó herido del otro lado del río. Te enseñará a saludar y presentarte." : "Explorador. Llega al terminar la misión 0.2."} />
-          <Member face="М" name="Мира · Mira" locked text="Intendente. Llega en el Expediente 2: números, dinero y comida." />
+          <Member face="М" name="Мира · Mira" locked={!miraDone} text={miraDone ? "Intendente. Cuenta cada moneda del escuadrón. Te enseña números, dinero y comida." : "Intendente. Llega en el Expediente 2: números, dinero y comida."} />
           <Member face="?" name="???" locked text="Alguien del escuadrón guarda un secreto. ¿Puedes confiar en todos?" />
         </div>
 
