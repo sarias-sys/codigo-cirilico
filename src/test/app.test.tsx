@@ -131,6 +131,17 @@ describe("la app", () => {
     expect(screen.getByText(/Cuenta cada moneda del escuadrón/)).toBeTruthy();
   });
 
+  it("al terminar el Expediente 2 se abre El traidor", () => {
+    let p = { ...fresh(), name: "Ana" };
+    for (const m of MISSIONS.filter((x) => x.level <= 2)) p = completeMission(p, m, dayOf());
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+    render(<App />);
+    expect(screen.getByText("Expediente 3 · El traidor")).toBeTruthy();
+    expect(screen.getByText(/Misión 3.1 · La foto/).closest("button")?.disabled).toBe(false);
+    expect(screen.getByText(/Misión 3.3/).closest("button")?.disabled).toBe(true);
+    expect(screen.getByText(/Expediente 4/)).toBeTruthy();
+  });
+
   describe("hablar al micrófono", () => {
     const heard: string[][] = [];
     class FakeRec {
